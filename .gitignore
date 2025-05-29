@@ -1,5 +1,7 @@
 # Temp
 .*.sw?
+.vscode/
+*.log
 
 # Prerequisites
 *.d
