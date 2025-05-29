@@ -105,7 +105,7 @@ notepad $PROFILE
 ```powershell
 # Git
 function gst { git status }
-function gp { git push $args }
+function gp { git push }
 function ga { git add $args }
 function gcmsg { git commit -m $args }
 ```
