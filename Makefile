@@ -27,7 +27,7 @@ DONE				= $(GREEN)[DONE]$(RESET)
 # ****************************
 
 CC					= cl
-CFLAGS				= /Wall /WX
+CFLAGS				= /nologo /Wall /WX
 
 
 # ****************************
@@ -35,18 +35,20 @@ CFLAGS				= /Wall /WX
 # ****************************
 
 # Source files
-SRCS_DIR			= srcs/
-SRC_SVC				= $(addprefix $(SRCS_DIR), $(SVC).c)	
-SRC_LOGGER			= $(addprefix $(SRCS_DIR), $(LOGGER).c)
+SRCS_DIR			= srcs
+SRC_SVC				= $(SRCS_DIR)\$(SVC).c
+SRC_LOGGER			= $(SRCS_DIR)\$(LOGGER).c
 
 # Obj files
-OBJS_DIR			= objs/
-OBJ_SVC				= $(addprefix $(OBJS_DIR), $(SVC).obj)	
-OBJ_LOGGER			= $(addprefix $(OBJS_DIR), $(LOGGER).obj)
+OBJS_DIR			= objs
+OBJ_SVC				= $(OBJS_DIR)\$(SVC).obj
+OBJ_LOGGER			= $(OBJS_DIR)\$(LOGGER).obj
 
 # Include files
-INCS_DIR			= incs/
-INCS				= $(wildcard $(INCS_DIR)*.h)
+INCS_DIR			= incs
+INCS				=	$(INCS_DIR)\svc.h \
+						$(INCS_DIR)\winkey.h \
+						$(INCS_DIR)\ascii_format.h
 
 
 # ****************************
@@ -54,13 +56,19 @@ INCS				= $(wildcard $(INCS_DIR)*.h)
 # ****************************
 
 .PHONY: all
-all: $(SVC).exe $(LOGGER).exe
+all: $(SVC) $(LOGGER)
 
-$(SVC).exe: $(OBJ_SVC)
-	$(CC) $(CFLAGS) -o $@
+$(SVC): $(OBJ_SVC)
+	$(CC) $(CFLAGS) /Fe$(SVC).exe $(OBJ_SVC)
 
-$(OBJ_SVC): $(SRC_SVC)
-	$(CC) $(CFLAGS) /C -o $<
+$(LOGGER): $(OBJ_LOGGER)
+	$(CC) $(CFLAGS) /Fe$(LOGGER).exe $(OBJ_LOGGER)
+
+$(OBJ_SVC): $(SRC_SVC) $(INCS) $(OBJS_DIR)
+	$(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_SVC)
+
+$(OBJS_DIR):
+	if not exist $(OBJS_DIR) mkdir $(OBJS_DIR)
 
 
 # ****************************
@@ -68,7 +76,10 @@ $(OBJ_SVC): $(SRC_SVC)
 # ****************************
 
 clean:
-	rmdir /S /Q $(OBJS_DIR)
+	if exist $(OBJS_DIR) rmdir /S /Q $(OBJS_DIR)
 
 fclean: clean
-	del /Q $(SVC).EXE $(LOGGER).exe
+	if exist $(SVC).exe del /Q $(SVC).exe
+	if exist $(LOGGER).exe del /Q $(LOGGER).exe
+
+re: fclean all

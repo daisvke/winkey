@@ -87,3 +87,33 @@ Now, any **terminal inside VS Code** will inherit the environment (`cl`, `nmake`
 nmake uses cmd.exe under the hood — not PowerShell
    * The syntax you use in the Makefile (like `del`) is interpreted by Command Prompt, not PowerShell.
    * For instance, `Remove-Item` is a PowerShell command — nmake won't understand it and will throw an error.
+
+---
+
+### **Setting up PowerShell**
+
+#### Adding aliases
+
+1. Open the PowerShell profile:
+
+```powershell
+notepad $PROFILE
+```
+
+2. Add the aliases as functions:
+
+```powershell
+# Git
+function gst { git status }
+function gp { git push $args }
+function ga { git add $args }
+function gcmsg { git commit -m $args }
+```
+
+Save and quit.
+
+3. Save and restart PowerShell or run:
+
+```powershell
+. $PROFILE
+```
