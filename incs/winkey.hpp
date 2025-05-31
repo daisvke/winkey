@@ -2,11 +2,10 @@
 # define WINKEY_H
 
 # include <windows.h>
-# include <psapi.h>
 # include <iostream>
 # include <fstream>
 # include <string>
-# include <ctime>
-# include <iomanip>  // For std::setw and std::setfill
+# include <iomanip>		// For std::setw and std::setfill
+# include <thread>		// For sleep_for
 
 #endif
