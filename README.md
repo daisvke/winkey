@@ -1,5 +1,11 @@
 # tinky-winkey
 
+
+## Documentation
+- [SetWindowsHookExA (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
+
+
+
 ## Setting up Windows
 
 ### Install Build Tools (CL, NMAKE)
