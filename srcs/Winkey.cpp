@@ -39,6 +39,7 @@ void Winkey::run() {
     /*
      * Main message loop
      * Blocks until a Windows message (like an event) is available.
+     * The loop only stops when receiving `WM_QUIT`.
      */
 
     MSG msg;
@@ -111,7 +112,20 @@ LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
     */
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
     {
+        static DWORD            LastVkCode = 0;
+        static size_t           LastVkCodeCount = 1;
         const KBDLLHOOKSTRUCT*  p = (KBDLLHOOKSTRUCT*)lParam;
+
+        // Check if the same key hasn't been typed repetitively
+        if (p->vkCode == LastVkCode) {
+            ++LastVkCodeCount;
+            // If the maximum repetition count is reached, quit
+            if (LastVkCodeCount > TW_MAX_SAME_VK)
+                return CallNextHookEx(NULL, nCode, wParam, lParam);
+        } else LastVkCodeCount = 1; // If not reached, reset the counter
+
+        LastVkCode = p->vkCode;
+
         BYTE                    keyboardState[256];
         WCHAR                   buffer[5] = {};
 
@@ -164,6 +178,12 @@ Winkey::~Winkey() {
 }
 
 int main() {
-    Winkey w;
-    w.run();
+    try {
+        Winkey w;
+        w.run();
+    } catch (std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    return 0;
 }

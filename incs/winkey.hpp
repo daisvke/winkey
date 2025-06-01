@@ -10,6 +10,7 @@
 
 # define TW_MUTEX_NAME	"TYYghhTYU5678FuGHFGFHYFUIY67"
 # define TW_LOGFILE		"winkey.log"
+# define TW_MAX_SAME_VK	10	// Max amount of repetitive vkCode
 
 class	Winkey
 {
