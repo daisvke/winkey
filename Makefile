@@ -3,7 +3,9 @@
 # ****************************
 
 SVC                 = svc
-LOGGER              = winkey
+LOGGER              = Winkey
+LOGGER_EXEC         = winkey.exe
+LOGGER_LOG          = winkey.log
 
 # ****************************
 #       BUILD COMMANDS
@@ -48,8 +50,8 @@ $(OBJ_SVC): $(SRC_SVC) $(INCS) | $(OBJS_DIR)
     $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_SVC)
 
 # ---- LOGGER ----
-$(LOGGER).exe: $(OBJS_LOGGER)
-    $(CC) $(CFLAGS) /Fe$(LOGGER).exe $(OBJS_LOGGER) $(LIBS)
+$(LOGGER_EXEC): $(OBJS_LOGGER)
+    $(CC) $(CFLAGS) /Fe$@ $(OBJS_LOGGER) $(LIBS)
 
 $(OBJ_LOGGER1): $(SRC_LOGGER1) $(INCS) $(OBJS_DIR)
     $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER1)
@@ -69,6 +71,7 @@ $(OBJS_DIR):
 
 clean:
     if exist $(OBJS_DIR) rmdir /S /Q $(OBJS_DIR)
+    if exist $(LOGGER_LOG) del /Q $(LOGGER_LOG)
 
 fclean: clean
     if exist $(SVC).exe del /Q $(SVC).exe

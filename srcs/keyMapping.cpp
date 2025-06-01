@@ -1,7 +1,7 @@
 # include <windows.h>
 # include <iostream>
 
-std::wstring GetKeyName(UINT vkCode) {
+const std::wstring GetKeyName(const UINT vkCode) {
     switch (vkCode) {
         case VK_BACK:         return L"[Backspace]";
         case VK_TAB:          return L"[Tab]";

