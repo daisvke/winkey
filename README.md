@@ -1,7 +1,7 @@
 # tinky-winkey
 
 ## TODO
-- doesn't work on open tab on firefox
+- 
 
 ## Documentation
 - [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
