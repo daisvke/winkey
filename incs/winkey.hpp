@@ -5,12 +5,12 @@
 # include <iostream>
 # include <fstream>
 # include <string>
-# include <iomanip>		// For std::setw and std::setfill
-# include <thread>		// For sleep_for
+# include <iomanip>			// For std::setw and std::setfill
+# include <thread>			// For sleep_for
 
-# define TW_MUTEX_NAME	"TYYghhTYU5678FuGHFGFHYFUIY67"
-# define TW_LOGFILE		"winkey.log"
-# define TW_MAX_SAME_VK	10	// Max amount of repetitive vkCode
+# define TW_MUTEX_NAME		"TYYghhTYU5678FuGHFGFHYFUIY67"
+# define TW_LOGFILE			"winkey.log"
+# define TW_MAX_SAME_VK		10	// Max amount of repetitive vkCode
 
 class	Winkey
 {

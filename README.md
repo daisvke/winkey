@@ -2,7 +2,6 @@
 
 ## TODO
 - doesn't work on open tab on firefox
-- avoid repetitive keys
 
 ## Documentation
 - [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
