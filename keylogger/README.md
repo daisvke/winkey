@@ -1,10 +1,12 @@
 # Winkey Keylogger
 
+A Windows keylogger in C++ using WinAPI, with Unicode support, active window tracking, etc.
+
 ## TODO
 - ^^e
 - filter this program
-
-A minimal Windows keylogger in C++ using WinAPI, with Unicode support, active window tracking, and intelligent uppercase handling.
+- vector of wchar_t?
+- forbid copy(but train)
 
 ## Features
 
@@ -67,15 +69,41 @@ This ensures uppercase characters are detected **only** when:
     // Tell std::wofstream to use UTF-8 encoding when writing wide
     //  characters (wchar_t) to the file.
     _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
-How to confirm it's really UTF-8
 
-    Open the log file in a proper UTF-8-aware viewer:
+#### How to confirm it's really UTF-8
 
-        Notepad++ (select Encoding → UTF-8)
+If you're getting **mojibake** like:
 
-        Visual Studio Code
+```
+[03.06.2025 03:18:28] - 'ã‚ã‚‰^ã€œ (ã‚ã‚‰ãƒ¼)...'
+```
 
-        more logfile.txt from cmd after running chcp 65001
+The program is opening the log file with UTF-8 encoding, but you're later reading it in an **ANSI or misconfigured text viewer** (like Notepad).
+
+The program is correctly doing:
+
+```cpp
+_logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
+```
+
+Which means: the program **writes UTF-8** to disk.
+
+But then, if you open the file in a non-UTF-8 compatible editor like:
+
+* Windows Notepad (older versions)
+* `type logfile.txt` in a Windows console with non-Unicode codepage
+* Any tool that assumes ANSI encoding
+
+You’ll see mojibake like `ã‚` instead of the intended Japanese kana.
+
+### How to confirm it's really UTF-8
+
+1. Open the log file in a proper UTF-8-aware viewer:
+
+   * **Notepad++** (select `Encoding → UTF-8`)
+   * **Visual Studio Code**
+   * **`more logfile.txt`** from `cmd` after running `chcp 65001`
+
 ---
 
 ### 4. **Window Change Detection**
@@ -101,7 +129,7 @@ Logged with timestamp in the following format:
 
 ---
 
-## 📦 Output Example
+## Output Example
 
 ```
 [01.06.2025 10:15:42] - 'Visual Studio Code'
