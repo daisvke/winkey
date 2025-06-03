@@ -2,6 +2,7 @@
 
 ## TODO
 - ^^e
+- filter this program
 
 A minimal Windows keylogger in C++ using WinAPI, with Unicode support, active window tracking, and intelligent uppercase handling.
 

