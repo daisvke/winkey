@@ -11,7 +11,7 @@ bool Winkey::isPrintable(wchar_t c) {
     return (c >= 0x20 && (c < 0x7F || c >= 0xA0));
 }
 
-Winkey::Winkey(): _logFileName(TW_LOGFILE) {
+Winkey::Winkey() : _logFileName(TW_LOGFILE) {
     // Prevent multiple instances of this program
     _singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
     if (GetLastError() == ERROR_ALREADY_EXISTS)
@@ -104,7 +104,7 @@ void CALLBACK Winkey::winEventProc(
 
         if (res > 0) {
             // Sanitize the window title
-            for (int i = 0; i < res; ++i)
+            for (int i = 0 ; i < res ; ++i)
                 if (!isPrintable(windowTitle[i])) windowTitle[i] = L'?';
 
             /*

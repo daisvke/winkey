@@ -3,7 +3,7 @@
 # ****************************
 
 NAME                = winkey.exe
-LOGGER_LOG          = winkey.log
+LOGGER_LOG          = wk.log
 
 # ****************************
 #       BUILD COMMANDS
@@ -11,7 +11,7 @@ LOGGER_LOG          = winkey.log
 
 CC                  = cl
 LIBS                = user32.lib psapi.lib
-CFLAGS              = /nologo /Wall /W3 /EHsc
+CFLAGS              = /nologo /Wall /WX /W3 /EHsc /wd5045
 
 # ****************************
 #       FILE STRUCTURE
