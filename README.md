@@ -1,5 +1,11 @@
 # tinky-winkey
 
+## Disclaimer
+
+This software is for **educational purposes only**. Unauthorized use of keyloggers may violate privacy laws. Use responsibly.
+
+---
+
 ## Documentation
 - [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
 - [TranslateMessage function (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-translatemessage)

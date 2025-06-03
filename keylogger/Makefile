@@ -1,10 +1,8 @@
 # ****************************
-#         TINKY-WINKEY
+#           WINKEY
 # ****************************
 
-SVC                 = svc
-LOGGER              = Winkey
-LOGGER_EXEC         = winkey.exe
+NAME                = winkey.exe
 LOGGER_LOG          = winkey.log
 
 # ****************************
@@ -13,44 +11,34 @@ LOGGER_LOG          = winkey.log
 
 CC                  = cl
 LIBS                = user32.lib psapi.lib
-CFLAGS              = /nologo /Wall /WX /EHsc /std:c++17 /wd5039 /wd4668
+CFLAGS              = /nologo /Wall /W3 /EHsc
 
 # ****************************
 #       FILE STRUCTURE
 # ****************************
 
-SRCS_DIR            = srcs
-INCS_DIR            = incs
+SRCS_DIR            = .
 OBJS_DIR            = objs
+INCS_DIR            = .
 
-SRC_SVC             = $(SRCS_DIR)\$(SVC).cpp
-SRC_LOGGER1         = $(SRCS_DIR)\$(LOGGER).cpp
+SRC_LOGGER1         = $(SRCS_DIR)\Winkey.cpp
 SRC_LOGGER2         = $(SRCS_DIR)\keyMapping.cpp
+SRC_LOGGER3         = $(SRCS_DIR)\main.cpp
 
-OBJ_SVC             = $(OBJS_DIR)\$(SVC).obj
-OBJ_LOGGER1         = $(OBJS_DIR)\$(LOGGER).obj
+OBJ_LOGGER1         = $(OBJS_DIR)\Winkey.obj
 OBJ_LOGGER2         = $(OBJS_DIR)\keyMapping.obj
-OBJS_LOGGER         = $(OBJ_LOGGER1) $(OBJ_LOGGER2)
+OBJ_LOGGER3         = $(OBJS_DIR)\main.obj
+OBJS_LOGGER         = $(OBJ_LOGGER1) $(OBJ_LOGGER2) $(OBJ_LOGGER3)
 
-INCS                = $(INCS_DIR)\svc.hpp $(INCS_DIR)\winkey.hpp
+INCS                = $(INCS_DIR)\winkey.hpp
 
 # ****************************
 #       BUILD RULES
 # ****************************
 
-.PHONY: all
+all: $(NAME)
 
-all: $(SVC).exe $(LOGGER).exe
-
-# ---- SVC ----
-$(SVC).exe: $(OBJ_SVC)
-    $(CC) $(CFLAGS) /Fe$(SVC).exe $(OBJ_SVC) $(LIBS)
-
-$(OBJ_SVC): $(SRC_SVC) $(INCS) | $(OBJS_DIR)
-    $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_SVC)
-
-# ---- LOGGER ----
-$(LOGGER_EXEC): $(OBJS_LOGGER)
+$(NAME): $(OBJS_LOGGER)
     $(CC) $(CFLAGS) /Fe$@ $(OBJS_LOGGER) $(LIBS)
 
 $(OBJ_LOGGER1): $(SRC_LOGGER1) $(INCS) $(OBJS_DIR)
@@ -59,7 +47,9 @@ $(OBJ_LOGGER1): $(SRC_LOGGER1) $(INCS) $(OBJS_DIR)
 $(OBJ_LOGGER2): $(SRC_LOGGER2) $(INCS) $(OBJS_DIR)
     $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER2)
 
-# ---- OBJ DIR ----
+$(OBJ_LOGGER3): $(SRC_LOGGER3) $(INCS) $(OBJS_DIR)
+    $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER3)
+
 $(OBJS_DIR):
     if not exist $(OBJS_DIR) mkdir $(OBJS_DIR)
 
@@ -67,14 +57,11 @@ $(OBJS_DIR):
 #       CLEAN RULES
 # ****************************
 
-.PHONY: clean fclean re
-
 clean:
     if exist $(OBJS_DIR) rmdir /S /Q $(OBJS_DIR)
     if exist $(LOGGER_LOG) del /Q $(LOGGER_LOG)
 
 fclean: clean
-    if exist $(SVC).exe del /Q $(SVC).exe
-    if exist $(LOGGER).exe del /Q $(LOGGER).exe
+    if exist $(NAME) del /Q $(NAME)
 
 re: fclean all
