@@ -3,7 +3,7 @@
 # ****************************
 
 NAME                = winkey.exe
-LOGGER_LOG          = wk.log
+LOGGER_LOG          = ks.log
 
 # ****************************
 #       BUILD COMMANDS

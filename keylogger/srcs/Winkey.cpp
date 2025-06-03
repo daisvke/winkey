@@ -141,19 +141,19 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
 
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
     {
-        static DWORD            LastVkCode = 0;
-        static size_t           LastVkCodeCount = 1;
+        static DWORD            lastVkCode = 0;
+        static size_t           lastVkCodeCount = 1;
         const KBDLLHOOKSTRUCT*  p = (KBDLLHOOKSTRUCT*)lParam;
 
         // Check if the same key hasn't been typed repetitively
-        if (p->vkCode == LastVkCode) {
-            ++LastVkCodeCount;
+        if (p->vkCode == lastVkCode) {
+            ++lastVkCodeCount;
             // If the maximum repetition count is reached, quit
-            if (LastVkCodeCount > TW_MAX_SAME_VK)
+            if (lastVkCodeCount > TW_MAX_SAME_VK)
                 return CallNextHookEx(NULL, nCode, wParam, lParam);
-        } else LastVkCodeCount = 1; // If not reached, reset the counter
+        } else lastVkCodeCount = 1; // If not reached, reset the counter
 
-        LastVkCode = p->vkCode;
+        lastVkCode = p->vkCode;
 
         BYTE            keyboardState[256];
         wchar_t         buffer[TW_KEYSTROKE_MAX];
@@ -202,12 +202,23 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  - A hardware-generated code from the keyboard itself.
          *  - Represents the physical location of the key on the keyboard.
          */
-
+        
+        if (lastVkCode > VK_OEM_2 && lastVkCode < VK_OEM_8) {
+            ToUnicodeEx(
+                    p->vkCode, p->scanCode, keyboardState,
+                    buffer, TW_KEYSTROKE_MAX,
+                    0,
+                    layout
+                );
+        }
+    
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState,
             buffer, TW_KEYSTROKE_MAX,
-            0, layout
+            0,
+            layout
         );
+        
         buffer[result] = L'\0';
 
         /* 

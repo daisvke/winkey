@@ -4,8 +4,6 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 
 ## TODO
 - ^^e
-- filter this program? (do server first)
-- src foldes etc
 
 ## Features
 
@@ -17,7 +15,7 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 
 ---
 
-## 🔧 How It Works
+## How It Works
 
 ### 1. **Preventing Duplicate Instances**
 On startup:
@@ -39,6 +37,9 @@ SetWindowsHookEx(WH_KEYBOARD_LL, ...);         // For global keystroke logging
 ---
 
 ### 3. **Keystroke Logging Logic**
+
+![Windows Keystroke Scheme](screenshots/keystroke-scheme.png)
+[Source](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-23)
 
 ```cpp
 ToUnicodeEx(...)  // Converts VK code + scan code to readable character
@@ -148,3 +149,8 @@ nmake
 ## Disclaimer
 
 This software is for **educational purposes only**. Unauthorized use of keyloggers may violate privacy laws. Use responsibly.
+
+## Documentation
+
+[Keylogger Tutorial (Synacktiv)](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-13)
+[Virtual Key Codes (Windows Learn)](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)

