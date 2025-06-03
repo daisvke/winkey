@@ -63,6 +63,9 @@ This ensures uppercase characters are detected **only** when:
 #### Unicode Characters
 * explain about wchar_t
 * Japanese
+    // Tell std::wofstream to use UTF-8 encoding when writing wide
+    //  characters (wchar_t) to the file.
+    _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
 How to confirm it's really UTF-8
 
     Open the log file in a proper UTF-8-aware viewer:
@@ -72,7 +75,6 @@ How to confirm it's really UTF-8
         Visual Studio Code
 
         more logfile.txt from cmd after running chcp 65001
-
 ---
 
 ### 4. **Window Change Detection**

