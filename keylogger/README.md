@@ -4,9 +4,8 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 
 ## TODO
 - ^^e
-- filter this program
-- vector of wchar_t?
-- forbid copy(but train)
+- filter this program? (do server first)
+- src foldes etc
 
 ## Features
 

@@ -1,12 +1,16 @@
 #include "Winkey.hpp"
 
 int main() {
+    Winkey *w = new Winkey();
+
     try {
-        Winkey w;
-        w.run();
+        w->run();
     } catch (std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
+        delete w;
         return 1;
     }
+
+    delete w;
     return 0;
 }

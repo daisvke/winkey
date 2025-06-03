@@ -68,3 +68,8 @@ std::wstring getKeyName(const UINT vkCode) {
             return std::wstring(buf);
     }
 }
+
+// Check if the character is a printable unicode character
+bool isPrintable(wchar_t c) {
+    return (c >= 0x20 && (c < 0x7F || c >= 0xA0));
+}

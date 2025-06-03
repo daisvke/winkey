@@ -22,6 +22,10 @@ class	Winkey
 	public:
 
 		Winkey();
+		// Delete the copy constructor
+		Winkey(const Winkey&) = delete;
+		// Delete the copy assignment operator
+		Winkey	&operator=(const Winkey&) = delete;
 		~Winkey();
 
 		void	run();
@@ -30,7 +34,6 @@ class	Winkey
 
 		void					setHooks();
 		static void				logToFile();
-		static bool				isPrintable(wchar_t c);
 
 		static LRESULT CALLBACK	lowLevelKeyboardProc(
 			const int nCode, const WPARAM wParam, const LPARAM lParam
@@ -80,5 +83,6 @@ class	HookSettingFailureException: public std::exception {
 };
 
 std::wstring	getKeyName(const UINT vkCode);
+bool			isPrintable(wchar_t c);
 
 #endif
