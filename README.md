@@ -4,16 +4,19 @@
 
 This software is for **educational purposes only**. Unauthorized use of keyloggers may violate privacy laws. Use responsibly.
 
+## Functionality
+- When the maximum key repetition count is reached, we stop printing it.
+
 ---
 
 ## Documentation
 - [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
 - [TranslateMessage function (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-translatemessage)
 - [Using Messages and Message Queues (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/winmsg/using-messages-and-message-queues)
+- [Virtual-Key Codes](https://learn.microsoft.com/fr-fr/windows/win32/inputdev/virtual-key-codes)
 
 
-
-
+---
 
 
 ## Setting up Windows

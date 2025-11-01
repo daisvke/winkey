@@ -17,17 +17,16 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 
 ## How It Works
 
-### 1. **Preventing Duplicate Instances**
+### **Preventing Duplicate Instances**
 On startup:
 ```cpp
 CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
 ````
-
 If a previous instance exists, it throws `InstanceAlreadyRunnningException()`.
 
 ---
 
-### 2. **Hook Setup**
+### **Hook Setup**
 
 ```cpp
 SetWinEventHook(EVENT_SYSTEM_FOREGROUND, ...); // For window title tracking
@@ -36,7 +35,7 @@ SetWindowsHookEx(WH_KEYBOARD_LL, ...);         // For global keystroke logging
 
 ---
 
-### 3. **Keystroke Logging Logic**
+### **Keystroke Logging Logic**
 
 ![Windows Keystroke Scheme](screenshots/keystroke-scheme.png)
 [Source](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-23)
@@ -72,7 +71,7 @@ This ensures uppercase characters are detected **only** when:
 
 #### How to confirm it's really UTF-8
 
-If you're getting **mojibake** like:
+If you're getting **mojibake** in the window title like:
 
 ```
 [03.06.2025 03:18:28] - 'ã‚ã‚‰^ã€œ (ã‚ã‚‰ãƒ¼)...'
@@ -96,7 +95,7 @@ But then, if you open the file in a non-UTF-8 compatible editor like:
 
 You’ll see mojibake like `ã‚` instead of the intended Japanese kana.
 
-### How to confirm it's really UTF-8
+### **How to confirm it's really UTF-8**
 
 1. Open the log file in a proper UTF-8-aware viewer:
 
@@ -106,7 +105,19 @@ You’ll see mojibake like `ã‚` instead of the intended Japanese kana.
 
 ---
 
-### 4. **Window Change Detection**
+### Why we won’t get Japanese characters from the keyboard hook
+
+When a user types Japanese, input is usually processed through the Windows IME (Input Method Editor). Unlike direct keyboard input, the IME composes text in stages and sends it through different message types such as:
+- WM_IME_STARTCOMPOSITION
+- WM_IME_COMPOSITION
+- WM_IME_ENDCOMPOSITION<br />
+
+Those are sent to the focused window, not to the low-level keyboard hook we’re using.<br />
+That means our hook never sees the resulting composed Japanese text — it only sees raw key codes before conversion.
+
+---
+
+### **Window Change Detection**
 
 Whenever a foreground window changes:
 
@@ -122,7 +133,7 @@ Logged with timestamp in the following format:
 
 ---
 
-### 5. **File Output**
+### **File Output**
 
 * The log file (`TW_LOGFILE`) is opened in append mode.
 * Each keystroke is immediately flushed to disk using `_logFile.flush()`.
