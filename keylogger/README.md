@@ -3,7 +3,7 @@
 A Windows keylogger in C++ using WinAPI, with Unicode support, active window tracking, etc.
 
 ## TODO
-- ^^e
+- dead keys: ^, ~ etc
 
 ## Features
 
