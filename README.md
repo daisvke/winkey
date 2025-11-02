@@ -4,20 +4,7 @@
 
 This software is for **educational purposes only**. Unauthorized use of keyloggers may violate privacy laws. Use responsibly.
 
-## Functionality
-- When the maximum key repetition count is reached, we stop printing it.
-
 ---
-
-## Documentation
-- [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
-- [TranslateMessage function (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-translatemessage)
-- [Using Messages and Message Queues (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/winmsg/using-messages-and-message-queues)
-- [Virtual-Key Codes](https://learn.microsoft.com/fr-fr/windows/win32/inputdev/virtual-key-codes)
-
-
----
-
 
 ## Setting up Windows
 
@@ -85,7 +72,7 @@ Now right-click any folder background → “Open VS 2022 x64 Tools Here”
 ---
 
 ### **How to use `nmake` in VS Code**
-
+#### Method 1
 To use `nmake` from within **VS Code**, you need to launch VS Code **with the environment set up by the "x64 Native Tools Command Prompt"**.
 
 1. Open: **"x64 Native Tools Command Prompt for VS 2022"**
@@ -101,6 +88,37 @@ To use `nmake` from within **VS Code**, you need to launch VS Code **with the en
    ```
 
 Now, any **terminal inside VS Code** will inherit the environment (`cl`, `nmake`, etc. will work).
+
+#### Method 2
+
+To configure **Visual Studio Code** to run **cmd.exe** with the environment variables set by **`vcvars32.bat`**, you can modify your terminal settings. Here’s how to do it:
+
+- 1. Open Settings
+   - Open Visual Studio Code.
+   - Go to **File** > **Preferences** > **Settings** (or press `Ctrl + ,`).
+
+- 2. Search for Integrated Terminal
+   - In the settings search bar, type **`terminal.integrated.shell.windows`** to find the terminal settings.
+
+- 3. Edit settings.json
+   - Open **`settings.json`** and set up a custom command that runs `vcvars32.bat`:
+
+```json
+"terminal.integrated.profiles.windows": {
+    "cmd with VS": {
+        "path": [
+            "C:\\Windows\\System32\\cmd.exe"
+        ],
+        "args": [
+            "/k",
+            "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat"
+        ],
+        "icon": "terminal",
+    }
+},
+"terminal.integrated.defaultProfile.windows": "cmd with VS"
+```
+You can now launch `cmd with VS` as a terminal profile within VSCode.
 
 ### **`nmake` and cmd.exe
 nmake uses cmd.exe under the hood — not PowerShell

