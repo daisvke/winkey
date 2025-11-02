@@ -3,7 +3,7 @@
 A Windows keylogger in C++ using WinAPI, with Unicode support, active window tracking, etc.
 
 ## TODO
-- dead keys: ^, ~ etc
+- check dead keys behavior on < w10
 
 ## Features
 
@@ -92,12 +92,46 @@ Those are sent to the focused window, not to the low-level keyboard hook we’re
 That means our hook never sees the resulting composed Japanese text — it only sees raw key codes before conversion.
 
 ---
-### Dead Keys problem
-We use `ToUnicodeEx` function to translate virtual-key codes to the corresponding Unicode character or characters.<br />
-However, as stated on [Microsoft Learn](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-tounicodeex):<br />
+Here’s a polished and technically precise version of your README section — keeping your tone but improving clarity, grammar, and formatting:
+
+---
+
+### Dead Keys Problem
+
+#### The Problem
+
+* We use the `ToUnicodeEx` function to translate virtual-key codes into their corresponding Unicode characters.
+
+* However, as stated in the [Microsoft Learn documentation](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-tounicodeex):
+
+  > As ToUnicodeEx translates the virtual-key code, it also changes the state of the kernel-mode keyboard buffer.
+  > This state-change affects dead keys, ligatures, Alt+Numeric keypad key entry, and so on.
+
+* Because of this behavior, `ToUnicodeEx` modifies the system keyboard buffer used by the active application.
+
+* As a result, when our hook calls `ToUnicodeEx` for logging purposes, it can interfere with the user’s actual input — producing odd results such as `^^e` instead of `ê`.
+
+#### The Solution
+
+* The same documentation notes that the `wFlags` parameter of `ToUnicodeEx` controls its behavior. Specifically:
+
+  > If bit 2 is set, the keyboard state is not changed (Windows 10, version 1607 and newer).
+
+* Therefore, by setting **bit 2** in `wFlags`, we can safely translate the key without altering the system keyboard state.
+
+```cpp
+int result = ToUnicodeEx(
+    p->vkCode,
+    p->scanCode,
+    keyboardState,
+    buffer,
+    TW_KEYSTROKE_MAX,
+    0x0004, // Set bit 2 → do not change keyboard state
+    layout
+);
 ```
-As ToUnicodeEx translates the virtual-key code, it also changes the state of the kernel-mode keyboard buffer. This state-change affects dead keys, ligatures, Alt+Numeric keypad key entry, and so on. 
-```
+
+* This prevents `ToUnicodeEx` from consuming or modifying dead keys, allowing composed characters like “ê” to appear correctly while still logging them accurately.
 
 ---
 

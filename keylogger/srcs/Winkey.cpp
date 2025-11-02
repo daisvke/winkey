@@ -203,20 +203,10 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  - Represents the physical location of the key on the keyboard.
          */
         
-        // if (lastVkCode > VK_OEM_2 && lastVkCode < VK_OEM_8) {
-        //     std::cout<< "heeere 0"<<std::endl;
-        //     ToUnicodeEx(
-        //             p->vkCode, p->scanCode, keyboardState,
-        //             buffer, TW_KEYSTROKE_MAX,
-        //             0,
-        //             layout
-        //         );
-        // }
-    
         int result = ToUnicodeEx(
             p->vkCode, p->scanCode, keyboardState,
             buffer, TW_KEYSTROKE_MAX,
-            0,
+            0x0004, // Don't change keyboard state (resolves dead keys problem)
             layout
         );
 
