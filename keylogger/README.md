@@ -19,9 +19,11 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 
 ### **Preventing Duplicate Instances**
 On startup:
+
 ```cpp
 CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
 ````
+
 If a previous instance exists, it throws `InstanceAlreadyRunnningException()`.
 
 ---
@@ -68,44 +70,18 @@ This ensures uppercase characters are detected **only** when:
     // Tell std::wofstream to use UTF-8 encoding when writing wide
     //  characters (wchar_t) to the file.
     _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
+* If you open the file in a non-UTF-8 compatible editor like:
+    - Windows Notepad (older versions)
+    - `type logfile.txt` in a Windows console with non-Unicode codepage
+    - Any tool that assumes ANSI encoding<br />
+You’ll see mojibake like `ã‚` instead of the intended Japanese kana.<br /><br />
 
-#### How to confirm it's really UTF-8
+=> Open the log file in a proper UTF-8-aware viewer:<br />
+   - **Notepad++** (select `Encoding → UTF-8`)
+   - **Visual Studio Code**
+   - **`more logfile.txt`** from `cmd` after running `chcp 65001`, etc...
 
-If you're getting **mojibake** in the window title like:
-
-```
-[03.06.2025 03:18:28] - 'ã‚ã‚‰^ã€œ (ã‚ã‚‰ãƒ¼)...'
-```
-
-The program is opening the log file with UTF-8 encoding, but you're later reading it in an **ANSI or misconfigured text viewer** (like Notepad).
-
-The program is correctly doing:
-
-```cpp
-_logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
-```
-
-Which means: the program **writes UTF-8** to disk.
-
-But then, if you open the file in a non-UTF-8 compatible editor like:
-
-* Windows Notepad (older versions)
-* `type logfile.txt` in a Windows console with non-Unicode codepage
-* Any tool that assumes ANSI encoding
-
-You’ll see mojibake like `ã‚` instead of the intended Japanese kana.
-
-### **How to confirm it's really UTF-8**
-
-1. Open the log file in a proper UTF-8-aware viewer:
-
-   * **Notepad++** (select `Encoding → UTF-8`)
-   * **Visual Studio Code**
-   * **`more logfile.txt`** from `cmd` after running `chcp 65001`
-
----
-
-### Why we won’t get Japanese characters from the keyboard hook
+#### Why we won’t get Japanese characters from the keyboard hook
 
 When a user types Japanese, input is usually processed through the Windows IME (Input Method Editor). Unlike direct keyboard input, the IME composes text in stages and sends it through different message types such as:
 - WM_IME_STARTCOMPOSITION
@@ -114,6 +90,14 @@ When a user types Japanese, input is usually processed through the Windows IME (
 
 Those are sent to the focused window, not to the low-level keyboard hook we’re using.<br />
 That means our hook never sees the resulting composed Japanese text — it only sees raw key codes before conversion.
+
+---
+### Dead Keys problem
+We use `ToUnicodeEx` function to translate virtual-key codes to the corresponding Unicode character or characters.<br />
+However, as stated on [Microsoft Learn](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-tounicodeex):<br />
+```
+As ToUnicodeEx translates the virtual-key code, it also changes the state of the kernel-mode keyboard buffer. This state-change affects dead keys, ligatures, Alt+Numeric keypad key entry, and so on. 
+```
 
 ---
 
@@ -165,3 +149,4 @@ This software is for **educational purposes only**. Unauthorized use of keylogge
 
 [Keylogger Tutorial (Synacktiv)](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-13)
 [Virtual Key Codes (Windows Learn)](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
+[Keyboard input on Windows, Part II: The semantic of ToUnicode()](https://metacpan.org/dist/UI-KeyboardLayout/view/lib/UI/KeyboardLayout.pm#Keyboard-input-on-Windows,-Part-II:-The-semantic-of-ToUnicode())
