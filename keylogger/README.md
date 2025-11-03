@@ -8,6 +8,8 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 
 ## TODO
 - check dead keys behavior on < w10
+- fix SHIFT + Eh => EH
+- disable errors mode
 
 ## Features
 
@@ -122,6 +124,39 @@ Here’s a polished and technically precise version of your README section — k
   > If bit 2 is set, the keyboard state is not changed (Windows 10, version 1607 and newer).
 
 * Therefore, by setting **bit 2** in `wFlags`, we can safely translate the key without altering the system keyboard state.
+
+---
+
+### Alt / AltGr Problem
+
+#### The Problem
+
+* On many international keyboard layouts, the **AltGr** key is implemented internally as a combination of **LeftCtrl + RightAlt**.
+
+* When we intercept keystrokes with a low-level keyboard hook and translate them using `ToUnicodeEx`, we often read the keyboard state with `GetKeyboardState`.
+
+* If both `VK_LCONTROL` and `VK_RMENU` (RightAlt) are reported as pressed at the same time, Windows interprets this as **Ctrl + Alt** rather than the single logical modifier **AltGr**.
+
+* The result is that `ToUnicodeEx` receives a modifier state equivalent to pressing **Ctrl + Alt + <Key>**, which typically has **no printable output**.
+  Consequently, `ToUnicodeEx` returns `0`, and our logger gets an incorrect value for the next pressed key.
+
+#### The Solution
+
+* Before calling `ToUnicodeEx`, detect the AltGr condition and normalise the modifier state:
+
+  ```cpp
+  if ((keyboardState[VK_RMENU] & 0x80) && (keyboardState[VK_LCONTROL] & 0x80)) {
+      // AltGr detected – clear LeftCtrl so ToUnicodeEx treats it as AltGr
+      keyboardState[VK_LCONTROL] &= ~0x80;
+      keyboardState[VK_CONTROL]  &= ~0x80;
+  }
+  ```
+
+* This small adjustment ensures that `ToUnicodeEx` sees the proper AltGr modifier instead of a generic Ctrl + Alt combination, allowing it to return the correct printable character.
+
+* The change does not affect normal Ctrl + Alt shortcuts or other modifier keys; it only corrects the transient overlap that occurs with AltGr.
+
+* As with the dead-key workaround, this fix isolates our hook’s translation logic from the user’s live keyboard state, preventing incorrect or missing character translations.
 
 ```cpp
 int result = ToUnicodeEx(

@@ -50,7 +50,7 @@ class	Winkey
 			LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
 		);
 
-		const char				*_logFileName;
+		static const char		*_logFileName;
 		static std::wofstream	_logFile;
 		static std::wstring		_windowTitle;
 		static HWND				_currentWindow;
