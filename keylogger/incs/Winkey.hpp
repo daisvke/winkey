@@ -35,7 +35,7 @@ class	Winkey
 		Winkey	&operator=(const Winkey&) = delete;
 		~Winkey();
 
-		void	run();
+		void	run(bool testMode);
 
 	private:
 
@@ -50,6 +50,7 @@ class	Winkey
 			LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
 		);
 
+		static bool				_testMode;
 		static const char		*_logFileName;
 		static std::wofstream	_logFile;
 		static std::wstring		_windowTitle;

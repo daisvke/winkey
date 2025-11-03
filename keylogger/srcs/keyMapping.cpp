@@ -1,5 +1,5 @@
-# include <windows.h>
-# include <iostream>
+#include <windows.h>
+#include <iostream>
 
 std::wstring getKeyName(const UINT vkCode) {
     switch (vkCode) {

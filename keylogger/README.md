@@ -214,6 +214,38 @@ nmake
 
 ---
 
+## Testing
+We can simulate key presses using **AutoHotkey (AHK)** scripts.<br />
+Running **AutoHotkey (AHK)** is very straightforward. Here’s a step-by-step guide to get you started:
+
+## Download and Install AutoHotkey
+
+1. Go to the official website: [https://www.autohotkey.com/](https://www.autohotkey.com/)
+2. Click **Download** and install the latest **current version**.
+3. The installer will guide you through setup — choose the **Express Installation** unless you have special needs.
+
+## Create a Script
+1. Right-click on your Desktop (or any folder).
+2. Select **New → AutoHotkey Script**.
+3. Give it a name, e.g., `test_keys.ahk`.
+4. Right-click the file → **Edit Script**. It will open in Notepad.
+
+## Write Your Key Simulation Script
+
+## Run the Script
+1. Double-click your `.ahk` file.
+2. You will see a green H icon appear in the system tray — the script is running.
+3. Focus the window you want to test (or your logger) and let the script type automatically.
+
+## Stop the Script
+* Right-click the green H icon in the system tray → **Exit**.
+
+## Optional: Compile to EXE
+* Right-click the `.ahk` file → **Compile Script**.
+* This produces a standalone `.exe` you can run on any Windows PC without installing AHK.
+
+---
+
 ## Disclaimer
 
 This software is for **educational purposes only**. Unauthorized use of keyloggers may violate privacy laws. Use responsibly.

