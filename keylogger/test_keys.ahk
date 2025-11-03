@@ -10,14 +10,12 @@ Send("The quick brown fox jumps over the lazy dog.")
 Sleep 100
 
 ; -----------------------------
-; Numbers 0-9 and Shifted symbols
+; Numbers and Shifted symbols
 ; -----------------------------
-symbols := ")!@#$%^&*("
+numbersAndSymbols := "09!@#$%^&*"
 Loop 10
 {
-    Send(Chr(48 + A_Index - 1))       ; number key 0-9
-    Sleep 50
-    Send(SubStr(symbols, A_Index, 1)) ; Shifted symbol
+    Send(SubStr(numbersAndSymbols, A_Index, 1)) ; Shifted symbol
     Sleep 50
 }
 
@@ -92,17 +90,12 @@ MsgBox("Test script finished sending keys to Winkey logger!")
 
 
 
-; Path to the log file
+; Paths
 logFile := "ks.log"
+answerFile := "expected.txt"
 
-; Path to the answer file
-answerFile := "answer.txt"
-
-
-; Read the answer file
+; Read files
 expected := FileRead(answerFile)
-
-; Read the log file
 content := FileRead(logFile)
 
 ; Remove newlines
@@ -111,44 +104,17 @@ expected := StrReplace(expected, "`n")
 content := StrReplace(content, "`r")
 content := StrReplace(content, "`n")
 
-; Compare lengths first
+; Compare lengths
 minLen := (StrLen(content) < StrLen(expected)) ? StrLen(content) : StrLen(expected)
-diffCount := 0
 diffPositions := []
 
 Loop minLen
 {
-    if SubStr(content, A_Index, 1) != SubStr(expected, A_Index, 1)
+    c1 := Ord(SubStr(content, A_Index, 1))
+    c2 := Ord(SubStr(expected, A_Index, 1))
+    if c1 != c2
     {
-        diffCount++
-        diffPositions.Push(A_Index)
+        MsgBox("Diff at position " A_Index ": log=" c1 ", expected=" c2)
+        ExitApp  ; immediately stops the script
     }
-}
-
-; If strings differ in length, record the extra characters
-if StrLen(content) != StrLen(expected)
-{
-    diffCount += Abs(StrLen(content) - StrLen(expected))
-    Loop Abs(StrLen(content) - StrLen(expected))
-        diffPositions.Push(minLen + A_Index)
-}
-
-; Report
-if diffCount = 0
-{
-    MsgBox("Log matches expected string!")
-}
-else
-{
-    msg := "Log differs from expected string!`n"
-    msg .= "Total differences: " diffCount "`n"
-
-	; Join diffPositions manually
-	posStr := ""  ; initialize to avoid #Warn warning
-	for i, v in diffPositions
-		posStr .= (i = 1 ? "" : ", ") v
-
-    msg .= "Expected: " expected "`n"
-    msg .= "Actual:   " content
-    MsgBox(msg)
 }

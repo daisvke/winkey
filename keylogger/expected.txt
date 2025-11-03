@@ -1,0 +1,1 @@
+[LeftShift]The quick brown fox jumps over the lazy dog[LeftShift].[LeftShift]0[LeftShift]9[LeftCtrl][RightAlt]@#$[LeftShift]%1&*[LeftCtrl]s[LeftShift]A[LeftShift]B[LeftAlt]f[LeftAlt]e[LeftCtrl][RightAlt][VK_51][LeftCtrl][RightAlt]€[F7][Tab][Backspace][Esc] [Up][Down][Left][Right][Home][End][Insert][Delete][Enter]
