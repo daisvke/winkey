@@ -2,6 +2,7 @@
 .*.sw?
 .vscode/
 *.log
+*.old
 
 # Prerequisites
 *.d

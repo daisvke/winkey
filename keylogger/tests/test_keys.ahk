@@ -25,7 +25,7 @@ Sleep 100
 ; -----------------------------
 ; Numbers and Shifted symbols
 ; -----------------------------
-numbersAndSymbols := "09!@#$%^&*"
+numbersAndSymbols := "09!@|#$%&*"
 Loop 10
 {
     Send(SubStr(numbersAndSymbols, A_Index, 1)) ; Shifted symbol
