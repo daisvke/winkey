@@ -254,8 +254,9 @@ Our script (`tests/test_keys.ahk`) compares the program’s output log (`ks.log`
 3. If a mismatch is found, it stops there and shows the **position** and the differing characters.
 4. If all matches, it shows *“Log matches expected string!”*.
 
-### Note
-On VSCode, `Ctrl+P > :1:[POSITION]` lets you get to the given position on a string.
+### Notes
+- In AutoHotkey, the `#` character is a special modifier symbol meaning `Win (Windows key)`, not a literal `#`. Don't use it in your tests.
+- On VSCode, `Ctrl+P > :1:[POSITION]` lets you get to the given position on a string.
 
 ### Files
 

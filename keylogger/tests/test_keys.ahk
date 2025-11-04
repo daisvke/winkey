@@ -9,9 +9,9 @@ logFile := "../ks.log"
 answerFile := "./expected.txt"
 
 
-;
+; ---------------------------------------------
 ; Simulate key presses
-;
+; ---------------------------------------------
 
 ; Wait 2 seconds to focus Winkey logger window
 Sleep 2000
@@ -25,7 +25,7 @@ Sleep 100
 ; -----------------------------
 ; Numbers and Shifted symbols
 ; -----------------------------
-numbersAndSymbols := "09!@|#$%&*"
+numbersAndSymbols := "09!@|$%&*"
 Loop 10
 {
     Send(SubStr(numbersAndSymbols, A_Index, 1)) ; Shifted symbol
@@ -94,13 +94,17 @@ Sleep 50
 Send("{Insert}")
 Sleep 50
 Send("{Enter}")
+Sleep 50
 
 MsgBox("Test script finished sending keys to Winkey logger!")
 
 
-;
+; ------------------------------------------------------------
+
+
+; ---------------------------------------------
 ; Check the differences between the logs
-;
+; ---------------------------------------------
 
 ; Read files
 expected := FileRead(answerFile)
@@ -123,7 +127,25 @@ Loop minLen
     c2 := Ord(SubStr(expected, A_Index, 1))
     if c1 != c2
     {
+        ; The MsgBox function in AutoHotkey v2 displays a popup window
         MsgBox("Diff at position " A_Index ": log=" c1 ", expected=" c2)
         ExitApp  ; immediately stops the script
     }
 }
+
+
+; ---------------------------------------------
+; Show success message when logs match perfectly
+; ---------------------------------------------
+
+; Syntax: MsgBox(Text, Title, Options)
+;  - Text:   The message to display.
+;  - Title:  The window title.
+;  - Options: Define the icon or buttons. 
+;             "Iconi" = information icon, "Iconx" = error icon, etc.
+
+MsgBox(
+    "Log matches expected string perfectly!",
+    "Test Result",
+    "Iconi"
+)
