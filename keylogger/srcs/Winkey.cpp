@@ -207,22 +207,39 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  (like Shift, Ctrl, Alt) if we want, for instance, the characters to be
          *  uppercase when Shift is hold.
          *
-         * 0x8000 means pressed, 0x0001 means active for toggle keys.
          */
 
         GetKeyboardState(keyboardState);
 
-        // Set modifier keys manually
-        if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
-            keyboardState[VK_SHIFT] |= 0x80;
+        /*
+         * Set modifier keys manually
+         *
+         * GetKeyState()
+         * -------------
+         * Gets the key status returned from the thread's message queue.
+         * 
+         * GetAsyncKeyState()
+         * ------------------
+         * Determines whether a key is up or down at the time the function is called.
+         * If the most significant bit (0x8000) is set, the key is down.
+         * 
+         * 0x8000 means pressed, 0x0001 means active for toggle keys.
+         */
 
-        if (GetKeyState(VK_CAPITAL) & 0x0001) // Toggle bit for CapsLock (unpressed)
+        if (GetAsyncKeyState(VK_SHIFT) & 0x8000) // If Shift key is down
+            keyboardState[VK_SHIFT] |= 0x80; // Set Shift key as down
+        else
+            keyboardState[VK_SHIFT] &= ~0x80; // Set Shift key as up
+
+        if (GetKeyState(VK_CAPITAL) & 0x0001) // Toggle bit for CapsLock
             keyboardState[VK_CAPITAL] |= 0x01;
         else
             keyboardState[VK_CAPITAL] &= ~0x01; // Clear the toggle state if not toggled
 
         if (GetAsyncKeyState(VK_MENU) & 0x8000) // Alt key
             keyboardState[VK_MENU] |= 0x80;
+        else
+            keyboardState[VK_MENU] &= ~0x80;
 
         // If AltGr (RightAlt) is down, remove the LeftCtrl bit so ToUnicodeEx
         // treats it as a layout AltGr combo instead of Ctrl+Alt.

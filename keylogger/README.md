@@ -1,9 +1,6 @@
 # Winkey Keylogger
 A Windows keylogger in C++ using WinAPI, with Unicode support, active window tracking, etc.
 
-## Functionality
-- When the maximum key repetition count is reached, we stop printing it.
-
 ---
 
 ## TODO
@@ -18,6 +15,7 @@ A Windows keylogger in C++ using WinAPI, with Unicode support, active window tra
 - Handles uppercase and shifted input (e.g., `A` vs `a`, `!` vs `1`).
 - Prevents multiple instances via named mutex.
 - Writes logs to a UTF-16LE encoded `.log` file.
+- When the maximum key repetition count is reached, we stop printing it.
 
 ---
 
@@ -254,6 +252,7 @@ This software is for **educational purposes only**. Unauthorized use of keylogge
 - [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
 - [TranslateMessage function (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-translatemessage)
 - [Using Messages and Message Queues (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/winmsg/using-messages-and-message-queues)
+- [GetAsyncKeyState function (winuser.h)](https://learn.microsoft.com/en-au/windows/win32/api/winuser/nf-winuser-getasynckeystate)
 - [Keylogger Tutorial (Synacktiv)](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-13)
 - [Virtual Key Codes (Windows Learn)](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
 - [Keyboard input on Windows, Part II: The semantic of ToUnicode()](https://metacpan.org/dist/UI-KeyboardLayout/view/lib/UI/KeyboardLayout.pm#Keyboard-input-on-Windows,-Part-II:-The-semantic-of-ToUnicode())
