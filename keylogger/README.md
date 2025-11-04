@@ -216,31 +216,60 @@ nmake
 We can simulate key presses using **AutoHotkey (AHK)** scripts.<br />
 Running **AutoHotkey (AHK)** is very straightforward. Here’s a step-by-step guide to get you started:
 
-## Download and Install AutoHotkey
+### Download and Install AutoHotkey to simulate keystrokes
 
 1. Go to the official website: [https://www.autohotkey.com/](https://www.autohotkey.com/)
 2. Click **Download** and install the latest **current version**.
 3. The installer will guide you through setup — choose the **Express Installation** unless you have special needs.
 
-## Create a Script
+#### Create a Script
 1. Right-click on your Desktop (or any folder).
 2. Select **New → AutoHotkey Script**.
 3. Give it a name, e.g., `test_keys.ahk`.
 4. Right-click the file → **Edit Script**. It will open in Notepad.
 
-## Write Your Key Simulation Script
+#### Write Your Key Simulation Script
 
-## Run the Script
+#### Run the Script
 1. Double-click your `.ahk` file.
 2. You will see a green H icon appear in the system tray — the script is running.
 3. Focus the window you want to test (or your logger) and let the script type automatically.
 
-## Stop the Script
+#### Stop the Script
 * Right-click the green H icon in the system tray → **Exit**.
 
-## Optional: Compile to EXE
+#### Optional: Compile to EXE
 * Right-click the `.ahk` file → **Compile Script**.
 * This produces a standalone `.exe` you can run on any Windows PC without installing AHK.
+
+---
+
+### Our Log Testing Script
+Our script (`tests/test_keys.ahk`) compares the program’s output log (`ks.log`) with an expected string in `expected.txt`.
+
+### How it works
+
+1. Run the program in **test mode** → creates `ks.log`.
+2. The script reads both files, removes newlines, and compares them **character by character**.
+3. If a mismatch is found, it stops there and shows the **position** and the differing characters.
+4. If all matches, it shows *“Log matches expected string!”*.
+
+### Note
+On VSCode, `Ctrl+P > :1:[POSITION]` lets you get to the given position on a string.
+
+### Files
+
+* `ks.log` – actual logged keys
+* `expected.txt` – expected keys
+* `test_keys.ahk` – test script
+
+### Run
+
+```bash
+Winkey.exe --test
+AutoHotkey.exe compare.ahk
+```
+
 
 ---
 
