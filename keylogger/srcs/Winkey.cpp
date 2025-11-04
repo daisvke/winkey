@@ -221,8 +221,6 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
         else
             keyboardState[VK_CAPITAL] &= ~0x01; // Clear the toggle state if not toggled
 
-        if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && !(keyboardState[VK_RMENU] & 0x80))
-            keyboardState[VK_CONTROL] &= 0x80;
         if (GetAsyncKeyState(VK_MENU) & 0x8000) // Alt key
             keyboardState[VK_MENU] |= 0x80;
 
