@@ -1,5 +1,8 @@
 #include "Winkey.hpp"
 
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "psapi.lib")
+
 // Declare the attributes which are used by the static methods
 bool            Winkey::_testMode;
 const char*     Winkey::_logFileName = TW_LOGFILE;

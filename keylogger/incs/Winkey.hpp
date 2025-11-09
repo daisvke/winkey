@@ -1,14 +1,19 @@
 #ifndef WINKEY_H
 # define WINKEY_H
 
+# define UNICODE				// Use the wide-character (UTF-16) versions of APIs by default
+# define _UNICODE				// tell C/C++ runtime and some helper macros to use wchar functions
+
+# define WIN32_LEAN_AND_MEAN	// Reduces the number of included headers for
+								// faster compile times; warnings may increase without it
 # include <windows.h>
 # include <iostream>
 # include <fstream>
 # include <string>
-# include <iomanip>			// For std::setw and std::setfill
-# include <thread>			// For sleep_for
+# include <iomanip>				// For std::setw and std::setfill
+# include <thread>				// For sleep_for
 
-# include <locale>			// For wide characters
+# include <locale>				// For wide characters
 # include <codecvt>
 
 

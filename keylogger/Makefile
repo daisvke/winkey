@@ -10,7 +10,6 @@ LOGGER_LOG          = ks.log
 # ****************************
 
 CC                  = cl
-LIBS                = user32.lib psapi.lib
 CFLAGS              = /nologo /Wall /WX /W3 /EHsc /wd5045
 
 # ****************************
@@ -39,7 +38,7 @@ INCS                = $(INCS_DIR)\winkey.hpp
 all: $(NAME)
 
 $(NAME): $(OBJS_LOGGER)
-    $(CC) $(CFLAGS) /Fe$@ $(OBJS_LOGGER) $(LIBS)
+    $(CC) $(CFLAGS) /Fe$@ $(OBJS_LOGGER)
 
 $(OBJ_LOGGER1): $(SRC_LOGGER1) $(INCS) $(OBJS_DIR)
     $(CC) $(CFLAGS) /I$(INCS_DIR) /c /Fo$@ $(SRC_LOGGER1)
