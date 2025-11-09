@@ -6,18 +6,18 @@
  * making it easier to compare the log with the expected results.
  */
 
-bool isTestModeSet(int argc, char *argv[]) {
-    if (argc > 1 && argv[1][0] == '-') {
-        if(argv[1][1] == 't') return true;
+static bool isTestModeSet(int argc, wchar_t *argv[]) {
+    if (argc > 1 && argv[1][0] == L'-') {
+        if(argv[1][1] == L't') return true;
         else {
-            std::cerr << "Error: Unknown argument.\n";
+            std::wcerr << L"Error: Unknown argument.\n";
             exit(1);
         }
     }
     return false;
 }
 
-int main(int argc, char *argv[]) {
+int wmain(int argc, wchar_t *argv[]) {
     Winkey *w = new Winkey();
 
     try {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     }
     catch (std::exception &e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::wcerr << L"Error: " << e.what() << std::endl;
         delete w;
         return 1;
     }
