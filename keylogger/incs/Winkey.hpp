@@ -20,10 +20,11 @@
 # include <locale>				// For wide characters
 # include <codecvt>
 
+# include <sstream>				// For error handling
+
 
 /************************** Macros **************************/
 
-# define TW_MUTEX_NAME		"TYYghhTYU5678FuGHFGFHYFUIY67"
 # define TW_LOGFILE			"ks.log"
 
 # define TW_MAX_SAME_VK		10	// Max amount of repetitive vkCode
@@ -81,15 +82,31 @@ enum class WinkeyError {
 
 class WinkeyException : public std::exception {
 public:
-	WinkeyException(WinkeyError code, std::string msg)
-		: _code(code), _msg(std::move(msg)) {}
+	/*
+	 * @param code		Our custom error code
+	 * @param msg		Our custom error message
+	 * @param winErr	The Windows API error code (from GetLastError)
+	 */
+    WinkeyException(WinkeyError code, const std::string& msg, DWORD winErr = 0)
+        : _code(code), _msg(msg), _winErr(winErr)
+    {
+        std::ostringstream oss;
+        oss << "[WinkeyError " << static_cast<int>(code) << "]";
+        if (winErr)
+            oss << " [Win32:" << winErr << "]";
+        oss << " " << msg;
+        _formatted = oss.str();
+    }
 
-	const char	*what() const noexcept override {return _msg.c_str(); }
-	WinkeyError	code() const noexcept {return _code; }
+    const char* what() const noexcept override { return _formatted.c_str(); }
+    WinkeyError code() const noexcept { return _code; }
+    DWORD winError() const noexcept { return _winErr; }
 
 private:
-	WinkeyError	_code;
-	std::string	_msg;
+    WinkeyError	_code;
+    std::string	_msg;
+    DWORD		_winErr;
+    std::string	_formatted;
 };
 
 

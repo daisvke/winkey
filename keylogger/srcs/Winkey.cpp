@@ -27,17 +27,24 @@ void Winkey::setHooks(void)
         winEventProc,
         0, 0,
         WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    
     if (!_winEventHook)
+    {
+        DWORD err = GetLastError();
         throw WinkeyException(
-            WinkeyError::winEventHookFailure, "SetWinEventHook failed."
+            WinkeyError::winEventHookFailure, "SetWinEventHook failed.", err
         );
+    }
 
     // Install global low-level keyboard hook to intercept keystrokes
     _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, lowLevelKeyboardProc, NULL, 0);
     if (!_keyboardHook)
+    {
+        DWORD err = GetLastError();
         throw WinkeyException(
-            WinkeyError::keyboardHookFailure, "SetWindowsHookEx failed."
+            WinkeyError::keyboardHookFailure, "SetWindowsHookEx failed.", err
         );
+    }
 }
 
 // Run the main loop of the program
@@ -53,9 +60,12 @@ void Winkey::run(bool testMode)
 
 
     if (!_logFile.is_open())
+    {
+        DWORD err = GetLastError();
         throw WinkeyException(
-            WinkeyError::FileOpenFailure, "Failed to open or to create the log file."
+            WinkeyError::FileOpenFailure, "Failed to open or to create the log file.", err
         );
+    }
 
     // Tell std::wofstream to use UTF-8 encoding when writing wide
     //  characters (wchar_t) to the file.
