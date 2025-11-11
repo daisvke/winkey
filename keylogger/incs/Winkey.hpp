@@ -6,6 +6,10 @@
 
 # define WIN32_LEAN_AND_MEAN	// Reduces the number of included headers for
 								// faster compile times; warnings may increase without it
+
+
+/************************** Includes **************************/
+
 # include <windows.h>
 # include <iostream>
 # include <fstream>
@@ -69,33 +73,23 @@ class	Winkey
 
 /************************** Exceptions **************************/
 
-class	InstanceAlreadyRunnningException: public std::exception {
-	public:
-		InstanceAlreadyRunnningException() noexcept {}
-		virtual const char	*what() const noexcept {
-			return "Another instance of this program is already running.";
-		}
-		virtual ~InstanceAlreadyRunnningException() noexcept {}
+enum class WinkeyError {
+	winEventHookFailure,
+    keyboardHookFailure,
+    FileOpenFailure
 };
 
-class	FileOpenFailureException: public std::exception {
-	public:
-		FileOpenFailureException() noexcept {}
-		virtual const char	*what() const noexcept {
-			return "Failed to open log file.";
-		}
-		virtual ~FileOpenFailureException() noexcept {}
-};
+class WinkeyException : public std::exception {
+public:
+	WinkeyException(WinkeyError code, std::string msg)
+		: _code(code), _msg(std::move(msg)) {}
 
-class	HookSettingFailureException: public std::exception {
-	public:
-		HookSettingFailureException() {}
-		virtual const char	*what() const noexcept {
-			return "Failed to set event hook.";
-		}
-		virtual ~HookSettingFailureException() noexcept {}
-	private:
-		const char	*_msg;
+	const char	*what() const noexcept override {return _msg.c_str(); }
+	WinkeyError	code() const noexcept {return _code; }
+
+private:
+	WinkeyError	_code;
+	std::string	_msg;
 };
 
 

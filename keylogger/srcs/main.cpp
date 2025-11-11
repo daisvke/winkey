@@ -24,9 +24,10 @@ int wmain(int argc, wchar_t *argv[]) {
         // Run the keylogger
         w->run(isTestModeSet(argc, argv));
     }
-    catch (std::exception &e)
+    catch (const WinkeyException &e)
     {
-        std::wcerr << L"Error: " << e.what() << std::endl;
+        std::cerr << "Error (" << static_cast<int>(e.code()) << "): "
+                  << e.what() << std::endl;
         delete w;
         return 1;
     }
