@@ -45,12 +45,13 @@ class	Winkey
 		Winkey	&operator=(const Winkey&) = delete;
 		~Winkey();
 
+		void	setHooks(void);
 		void	run(bool testMode);
+		void	removeHooks(void);
 
 	private:
 
-		void					setHooks();
-		static void				logToFile();
+		static void				logToFile(void);
 
 		static LRESULT CALLBACK	lowLevelKeyboardProc(
 			const int nCode, const WPARAM wParam, const LPARAM lParam
@@ -66,7 +67,6 @@ class	Winkey
 		static std::wstring		_windowTitle;
 		static HWND				_currentWindow;
 		static std::wstring		_keyStroke;
-		HANDLE					_singleInstanceMutex;
 		HWINEVENTHOOK			_winEventHook;
 		HHOOK   				_keyboardHook;
 };

