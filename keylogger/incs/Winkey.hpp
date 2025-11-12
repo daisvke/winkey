@@ -16,11 +16,11 @@
 # include <string>
 # include <iomanip>				// For std::setw and std::setfill
 # include <thread>				// For sleep_for
-
-# include <locale>				// For wide characters
-# include <codecvt>
-
 # include <sstream>				// For error handling
+
+// For wide characters
+# include <locale>
+# include <codecvt>
 
 
 /************************** Macros **************************/
@@ -98,9 +98,9 @@ public:
         _formatted = oss.str();
     }
 
-    const char* what() const noexcept override { return _formatted.c_str(); }
-    WinkeyError code() const noexcept { return _code; }
-    DWORD winError() const noexcept { return _winErr; }
+    const char*	what() const noexcept override { return _formatted.c_str(); }
+    WinkeyError	code() const noexcept { return _code; }
+    DWORD		winError() const noexcept { return _winErr; }
 
 private:
     WinkeyError	_code;

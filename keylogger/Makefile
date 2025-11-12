@@ -22,11 +22,11 @@ INCS_DIR            = incs
 
 SRC_LOGGER1         = $(SRCS_DIR)\Winkey.cpp
 SRC_LOGGER2         = $(SRCS_DIR)\keyMapping.cpp
-SRC_LOGGER3         = $(SRCS_DIR)\main.cpp
+SRC_LOGGER3         = $(SRCS_DIR)\wmain.cpp
 
 OBJ_LOGGER1         = $(OBJS_DIR)\Winkey.obj
 OBJ_LOGGER2         = $(OBJS_DIR)\keyMapping.obj
-OBJ_LOGGER3         = $(OBJS_DIR)\main.obj
+OBJ_LOGGER3         = $(OBJS_DIR)\wmain.obj
 OBJS_LOGGER         = $(OBJ_LOGGER1) $(OBJ_LOGGER2) $(OBJ_LOGGER3)
 
 INCS                = $(INCS_DIR)\winkey.hpp
