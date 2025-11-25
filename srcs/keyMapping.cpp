@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <iostream>
 
+// Get the key name to output from the given VK code
 std::wstring getKeyName(const UINT vkCode) {
     switch (vkCode) {
         case VK_BACK:         return L"[Backspace]";

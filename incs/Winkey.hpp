@@ -51,6 +51,21 @@ class	Winkey
 
 	private:
 
+		/*
+		 * Windows hook callbacks such as:
+		 *  - lowLevelKeyboardProc
+		 *  - winEventProc
+		 * must be static functions.
+		 * 
+		 * This is because Windows API requires callback functions to have C-style
+		 * 	linkage, meaning:
+		 *    - They cannot be class instance methods
+		 * 	  - They cannot implicitly use `this`
+		 * 	  - Windows will call them from outside  class context
+		 * 
+		 * Therefore, if the callback needs access to class data, that data must be static.
+		 */
+
 		static void				logToFile(void);
 
 		static LRESULT CALLBACK	lowLevelKeyboardProc(
