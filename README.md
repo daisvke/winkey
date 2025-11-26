@@ -5,22 +5,31 @@ A Windows keylogger in C++ using WinAPI, with Unicode support and active window 
 
 ## TODO
 - check dead keys behavior on < w10
-- readme: disable errors mode (test mode)
-- reamde: replace "this is a test"
-- add ref to win-cpp-env
 - leak checks: windbg?
-
-## Features
-
-- Logs all keystrokes globally.
-- Detects and logs active window title changes.
-- Handles uppercase and shifted input (e.g., `A` vs `a`, `!` vs `1`).
-- Writes logs to a UTF-16LE encoded `.log` file.
-- When the maximum key repetition count is reached, we stop printing it.
 
 ---
 
-## Build Instructions
+## Screenshot
+
+![Test Result](screenshots/test-result.png)
+
+---
+
+## Features
+
+* Logs all keystrokes globally.
+* Detects and logs active window title changes.
+* Handles uppercase and shifted input (e.g., `A` vs `a`, `!` vs `1`).
+* Correctly captures **Ctrl-modified characters** (e.g., `Ctrl+A`, `Ctrl+Alt+key`).
+* Supports **Alt code character input** (e.g., `Alt+0234 → ê`) without corrupting the keyboard state.
+* Properly processes **dead keys** (e.g., `^` + `e` → `ê`) while preserving the user's keyboard state.
+* Writes logs to a UTF-16LE encoded `.log` file.
+* Limits repeated key output: when the maximum repetition count is reached, logging stops for that key.
+* Includes a **test mode** (`-t`) that simplifies comparing expected keystrokes with actual results (no window titles, no extra output anywhere, even on errors).
+
+---
+
+## Build & Execution Instructions
 
 > nmake
 
@@ -28,6 +37,12 @@ and the usual:
 > nmake clean<br />
 > nmake fclean<br />
 > nmake re
+
+Run with:
+```powershell
+# '-t' is for the test mode
+.\winkey.exe [-t]e
+```
 
 ---
 
@@ -206,13 +221,38 @@ Logged with timestamp in the following format:
 ## Output Example
 
 ```
-[01.06.2025 10:15:42] - 'Visual Studio Code'
-This is a test.
+[26.11.2025 23:32:43] - 'Write: (no subject) - Thunderbird'
+[LeftShift]Si tu savais comme je t'aime et, bien que tu ne m'aimes pas, comme je suis joyeux, comme je suis robuste et fier de sortir avec ton image en t[VK_DD]ête, de sortir de l'univers[LeftShift].[Enter][LeftShift]Comme je suis joyeux à en mourir[LeftShift].[Enter][LeftShift]Si tu savais comme le monde m'est soumis[LeftShift].[Enter][LeftShift]Et toi, belle insoumise aussi, comme tu es ma prisonnière[LeftShift].[Enter][VK_DD][LeftShift]Ô toi, lion[Backspace][Backspace][Backspace]oin-de-moi à qui je suis soumis[LeftShift].[Enter][LeftShift]Si tu savais[LeftShift].
+
+[26.11.2025 23:39:46] - 'Problem loading page — Tor Browser'
+is sending a love poem in french to my ex is a good idea[LeftShift]?[Enter]
+
+[26.11.2025 23:41:05] - 'Duck.ai — Mozilla Firefox'
+movies about getting back ex gf[Enter]
+
+[26.11.2025 23:43:33] - 'FILMS'
+l[Down][Down]a[Down][Up]sunrise
+
+[26.11.2025 23:44:04] - 'Sunrise (1927) - VLC media player'
+[LeftCtrl]c
 ```
 
 ---
 
 ## Testing
+### Test Mode (`-t`)
+
+The application provides a **test mode** that makes it easier to compare expected keystrokes with actual output.
+
+#### What test mode does:
+
+* **Does not log window titles** — only raw keystroke data is captured.
+* **Produces debug output** — error logs are printed on console.
+
+---
+
+### Using AutoHotkey
+
 We can simulate key presses using **AutoHotkey (AHK)** scripts.<br />
 Running **AutoHotkey (AHK)** is very straightforward. Here’s a step-by-step guide to get you started:
 
@@ -249,9 +289,14 @@ Our script (`tests/test_keys.ahk`, or `tests/test_keys.exe` for the compiled ver
 
 ### How it works
 
-1. Run the program in **test mode** → creates `ks.log`.
+1. Run the program in **test mode** → creates `ks.log` without window title names.
 2. The script reads both files, removes newlines, and compares them **character by character**.
 3. If a mismatch is found, it stops there and shows the **position** and the differing characters.
+
+<p align="center">
+<img src="screenshots/ahk.png" alt="ahk test" width="500" />
+</p>
+
 4. If all matches, it shows *“Log matches expected string!”*.
 
 ### Notes
@@ -268,14 +313,34 @@ Our script (`tests/test_keys.ahk`, or `tests/test_keys.exe` for the compiled ver
 ### Run
 
 ```powershell
-# Run the keylogger first
-Winkey.exe --test
+# Run the keylogger first in test mode
+.\winkey.exe -t
 
 # Then tun the test script by double-clicking:
 test_keys.ahk
 # Or (no need to install AHK):
 test_keys.exe
 ```
+
+### ⚠️ Dead Key Limitations in Test Mode
+
+* **Important:** keys can be dependent on the **user’s keyboard layout**.
+* Because of this, test results for some keys may **not be consistent** across different keyboards or locales.
+* When using the script, check your own keyboard layout and adjust expected logs accordingly.
+
+---
+
+## Setting Up a Safe Development Environment
+
+For developing and testing C/C++ programs safely, especially code that may affect your system (e.g., educational keylogger experiments), we recommend using an isolated environment. You can use the preconfigured Windows development setup provided in [windows-cpp-environment](https://github.com/daisvke/windows-cpp-environment).
+
+This setup includes:
+
+- Visual Studio Build Tools with `cl` and `nmake`  
+- PowerShell aliases for development  
+- A Windows Sandbox configuration (`.wsb`) that maps a host folder, disables networking, and runs an initialization script
+
+**Important:** Always run experimental or sensitive programs inside the sandbox to prevent unintended effects on your main system. Follow the instructions in the repository to launch the sandbox and test safely.
 
 ---
 
