@@ -1,54 +1,80 @@
 # Winkey Keylogger
+
 A Windows keylogger in C++ using WinAPI, with Unicode support and active window tracking.
 
 ---
 
-## TODO
-- check dead keys behavior on < w10
-- leak checks: windbg?
+## Table of Contents
+
+* [1. Screenshot](#1-screenshot)
+* [2. Features](#2-features)
+* [3. Build & Execution Instructions](#3-build--execution-instructions)
+* [4. How It Works](#4-how-it-works)
+
+  * [4.1 Keystroke Logging Logic](#41-keystroke-logging-logic)
+  * [4.2 Modifier Keys (Handled Manually)](#42-modifier-keys-handled-manually)
+* [5. Unicode & wchar_t Support](#5-unicode--wchart-support)
+
+  * [5.1 Capturing UTF-8 Characters](#51-capturing-utf-8-characters)
+  * [5.2 Mojibake](#52-mojibake)
+  * [5.3 Why we won’t get Japanese characters from the keyboard hook](#53-why-we-wont-get-japanese-characters-from-the-keyboard-hook)
+* [6. Dead Keys Problem](#6-dead-keys-problem)
+* [7. Alt / AltGr Problem](#7-alt--altgr-problem)
+* [8. Window Change Detection](#8-window-change-detection)
+* [9. File Output](#9-file-output)
+* [10. Output Example](#10-output-example)
+* [11. Testing](#11-testing)
+
+  * [11.1 Test Mode](#111-test-mode)
+  * [11.2 Using AutoHotkey](#112-using-autohotkey)
+* [12. Setting Up a Safe Development Environment](#12-setting-up-a-safe-development-environment)
+* [13. Disclaimer](#13-disclaimer)
+* [14. Documentation](#14-documentation)
 
 ---
 
-## Screenshot
+## 1. Screenshot
 
 ![Test Result](screenshots/test-result.png)
 
 ---
 
-## Features
+## 2. Features
 
 * Logs all keystrokes globally.
 * Detects and logs active window title changes.
-* Handles uppercase and shifted input (e.g., `A` vs `a`, `!` vs `1`).
+* Handles uppercase and shifted input.
 * Correctly captures **Ctrl-modified characters** (e.g., `Ctrl+A`, `Ctrl+Alt+key`).
-* Supports **Alt code character input** (e.g., `Alt+0234 → ê`) without corrupting the keyboard state.
+* Supports **Alt code character input** (e.g., `#[|\]`) without corrupting the keyboard state.
 * Properly processes **dead keys** (e.g., `^` + `e` → `ê`) while preserving the user's keyboard state.
 * Writes logs to a UTF-16LE encoded `.log` file.
 * Limits repeated key output: when the maximum repetition count is reached, logging stops for that key.
-* Includes a **test mode** (`-t`) that simplifies comparing expected keystrokes with actual results (no window titles, no extra output anywhere, even on errors).
+* Includes a **test mode** (`-t`) that simplifies debugging and comparing expected keystrokes with actual results.
 
 ---
 
-## Build & Execution Instructions
+## 3. Build & Execution Instructions
 
 > nmake
 
 and the usual:
+
 > nmake clean<br />
 > nmake fclean<br />
 > nmake re
 
 Run with:
+
 ```powershell
 # '-t' is for the test mode
-.\winkey.exe [-t]e
+.\winkey.exe [-t]
 ```
 
 ---
 
-## How It Works
+## 4. How It Works
 
-### **Keystroke Logging Logic**
+### 4.1 Keystroke Logging Logic
 
 ![Windows Keystroke Scheme](screenshots/keystroke-scheme.png)
 [Source](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-23)
@@ -57,9 +83,7 @@ Run with:
 ToUnicodeEx(...)  // Converts VK code + scan code to readable character
 ```
 
----
-
-#### Modifier Keys (Handled Manually)
+### 4.2 Modifier Keys (Handled Manually)
 
 * `VK_SHIFT` (for uppercase & symbols)
 * `VK_CAPITAL` (Caps Lock toggle)
@@ -72,112 +96,44 @@ GetAsyncKeyState(VK_SHIFT) & 0x8000
 GetKeyState(VK_CAPITAL) & 0x0001
 ```
 
-This ensures uppercase characters are detected only when:
+Ensuring uppercase characters are detected only when:
 
 * Shift is held
 * Caps Lock is toggled (for alphabetic keys)
 
 ---
 
-### Unicode & `wchar_t` Support
----
-#### Capturing UTF-8 Characters
-This project uses `wchar_t` and `std::wofstream` to correctly handle multilingual keyboard input (including Japanese, Chinese, Korean, and accented European characters).
+## 5. Unicode & `wchar_t` Support
 
-By default, `wofstream` does **not** write UTF-8.
-To ensure that all captured characters—such as Japanese (日本語) or accented letters (é, ñ, ê)—are written correctly, the log file stream is explicitly imbued with a UTF-8 codec:
+### 5.1 Capturing UTF-8 Characters
+
+This project uses `wchar_t` and `std::wofstream` to correctly handle multilingual keyboard input (including Japanese, Chinese, Korean, and accented European characters).
 
 ```cpp
 // Write wchar_t data (Unicode) as UTF-8 to the log file
 _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
 ```
 
-This guarantees that every wide character produced by `ToUnicodeEx()` is saved in proper UTF-8 encoding, making the log file readable across all platforms and editors.
+### 5.2 Mojibake
+
+Opening the log in a non-UTF-8 editor may produce garbled text:
+
+* Older Windows Notepad
+* `type logfile.txt` in cmd without `chcp 65001`
+* Any ANSI-only tool
+
+Use UTF-8 compatible tools like **Notepad++** or **VS Code**.
+
+### 5.3 Why we won’t get Japanese characters from the keyboard hook
+
+Windows IME processes Japanese input in stages and sends messages (`WM_IME_STARTCOMPOSITION`, `WM_IME_COMPOSITION`, `WM_IME_ENDCOMPOSITION`) to the focused window. The low-level keyboard hook only sees raw key codes, not composed text.
 
 ---
 
-#### Mojibake
-If you open the file in a non-UTF-8 compatible editor like:
-  - Windows Notepad (older versions)
-  - `type logfile.txt` in a Windows console with non-Unicode codepage
-  - Any tool that assumes ANSI encoding
+## 6. Dead Keys Problem
 
-You’ll see mojibake like `ã‚` instead of the intended Japanese kana.
-
-=> Open the log file in a proper UTF-8-aware viewer:
-  - **Notepad++** (select `Encoding → UTF-8`)
-  - **Visual Studio Code**
-  - **`more logfile.txt`** from `cmd` after running `chcp 65001`, etc...
-
----
-
-#### Why we won’t get Japanese characters from the keyboard hook
-
-When a user types Japanese, input is usually processed through the Windows IME (Input Method Editor). Unlike direct keyboard input, the IME composes text in stages and sends it through different message types such as:
-- WM_IME_STARTCOMPOSITION
-- WM_IME_COMPOSITION
-- WM_IME_ENDCOMPOSITION<br />
-
-Those are sent to the focused window, not to the low-level keyboard hook we’re using.<br />
-That means our hook never sees the resulting composed Japanese text — it only sees raw key codes before conversion.
-
----
-
-### Dead Keys Problem
-
-#### The Problem
-
-* We use the `ToUnicodeEx` function to translate virtual-key codes into their corresponding Unicode characters.
-
-* However, as stated in the [Microsoft Learn documentation](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-tounicodeex):
-
-  > As ToUnicodeEx translates the virtual-key code, it also changes the state of the kernel-mode keyboard buffer.
-  > This state-change affects dead keys, ligatures, Alt+Numeric keypad key entry, and so on.
-
-* Because of this behavior, `ToUnicodeEx` modifies the system keyboard buffer used by the active application.
-
-* As a result, when our hook calls `ToUnicodeEx` for logging purposes, it can interfere with the user’s actual input — producing odd results such as `^^e` instead of `ê`.
-
-#### The Solution
-
-* The same documentation notes that the `wFlags` parameter of `ToUnicodeEx` controls its behavior. Specifically:
-
-  > If bit 2 is set, the keyboard state is not changed (Windows 10, version 1607 and newer).
-
-* Therefore, by setting **bit 2** in `wFlags`, we can safely translate the key without altering the system keyboard state.
-
----
-
-### Alt / AltGr Problem
-
-#### The Problem
-
-* On many international keyboard layouts, the **AltGr** key is implemented internally as a combination of **LeftCtrl + RightAlt**.
-
-* When we intercept keystrokes with a low-level keyboard hook and translate them using `ToUnicodeEx`, we often read the keyboard state with `GetKeyboardState`.
-
-* If both `VK_LCONTROL` and `VK_RMENU` (RightAlt) are reported as pressed at the same time, Windows interprets this as **Ctrl + Alt** rather than the single logical modifier **AltGr**.
-
-* The result is that `ToUnicodeEx` receives a modifier state equivalent to pressing **Ctrl + Alt + <Key>**, which typically has **no printable output**.
-  Consequently, `ToUnicodeEx` returns `0`, and our logger gets an incorrect value for the next pressed key.
-
-#### The Solution
-
-* Before calling `ToUnicodeEx`, detect the AltGr condition and normalise the modifier state:
-
-  ```cpp
-  if ((keyboardState[VK_RMENU] & 0x80) && (keyboardState[VK_LCONTROL] & 0x80)) {
-      // AltGr detected – clear LeftCtrl so ToUnicodeEx treats it as AltGr
-      keyboardState[VK_LCONTROL] &= ~0x80;
-      keyboardState[VK_CONTROL]  &= ~0x80;
-  }
-  ```
-
-* This small adjustment ensures that `ToUnicodeEx` sees the proper AltGr modifier instead of a generic Ctrl + Alt combination, allowing it to return the correct printable character.
-
-* The change does not affect normal Ctrl + Alt shortcuts or other modifier keys; it only corrects the transient overlap that occurs with AltGr.
-
-* As with the dead-key workaround, this fix isolates our hook’s translation logic from the user’s live keyboard state, preventing incorrect or missing character translations.
+* `ToUnicodeEx` may modify the system keyboard buffer, affecting dead keys.
+* Setting **bit 2** in `wFlags` prevents altering the keyboard state:
 
 ```cpp
 int result = ToUnicodeEx(
@@ -191,19 +147,31 @@ int result = ToUnicodeEx(
 );
 ```
 
-* This prevents `ToUnicodeEx` from consuming or modifying dead keys, allowing composed characters like “ê” to appear correctly while still logging them accurately.
+---
+
+## 7. Alt / AltGr Problem
+
+* AltGr is interpreted as LeftCtrl + RightAlt.
+* Detect AltGr and clear LeftCtrl to translate correctly:
+
+```cpp
+if ((keyboardState[VK_RMENU] & 0x80) && (keyboardState[VK_LCONTROL] & 0x80)) {
+    keyboardState[VK_LCONTROL] &= ~0x80;
+    keyboardState[VK_CONTROL]  &= ~0x80;
+}
+```
 
 ---
 
-### **Window Change Detection**
+## 8. Window Change Detection
 
-Whenever a foreground window changes:
+Foreground window changes:
 
 ```cpp
 winEventProc(...) ➜ GetWindowTextW(...) ➜ _windowTitle
 ```
 
-Logged with timestamp in the following format:
+Logged with timestamp:
 
 ```
 [DD.MM.YYYY HH:MM:SS] - 'Window Title'
@@ -211,14 +179,14 @@ Logged with timestamp in the following format:
 
 ---
 
-### **File Output**
+## 9. File Output
 
-* The log file (`TW_LOGFILE`) is opened in append mode.
-* Each keystroke is immediately flushed to disk using `_logFile.flush()`.
+* Log file (`TW_LOGFILE`) is append-only except in test mode where the file is overwritten.
+* Keystrokes are flushed immediately using `_logFile.flush()`.
 
 ---
 
-## Output Example
+## 10. Output Example
 
 ```
 [26.11.2025 23:32:43] - 'Write: (no subject) - Thunderbird'
@@ -234,35 +202,29 @@ movies about getting back ex gf[Enter]
 l[Down][Down]a[Down][Up]sunrise
 
 [26.11.2025 23:44:04] - 'Sunrise (1927) - VLC media player'
-[LeftCtrl]c
 ```
 
 ---
 
-## Testing
-### Test Mode (`-t`)
+## 11. Testing
 
-The application provides a **test mode** that makes it easier to compare expected keystrokes with actual output.
+### 11.1 Test Mode
 
-#### What test mode does:
+* No window titles — only raw keystrokes
+* Produces debug output on console
 
-* **Does not log window titles** — only raw keystroke data is captured.
-* **Produces debug output** — error logs are printed on console.
+### 11.2 Using AutoHotkey
 
----
+We can simulate key presses using **AutoHotkey (AHK)** scripts.
 
-### Using AutoHotkey
-
-We can simulate key presses using **AutoHotkey (AHK)** scripts.<br />
-Running **AutoHotkey (AHK)** is very straightforward. Here’s a step-by-step guide to get you started:
-
-### Download and Install AutoHotkey to simulate keystrokes
+#### Download and Install AutoHotkey
 
 1. Go to the official website: [https://www.autohotkey.com/](https://www.autohotkey.com/)
 2. Click **Download** and install the latest **current version**.
 3. The installer will guide you through setup.
 
 #### Create a Script
+
 1. Right-click on your Desktop (or any folder).
 2. Select **New → AutoHotkey Script**.
 3. Give it a name, e.g., `test_keys.ahk`.
@@ -270,89 +232,94 @@ Running **AutoHotkey (AHK)** is very straightforward. Here’s a step-by-step gu
 
 #### Write Your Key Simulation Script
 
+Write the keystrokes you want the logger to capture. Save the script.
+
 #### Run the Script
+
 1. Double-click your `.ahk` file.
-2. You will see a green H icon appear in the system tray — the script is running.
+2. A green **H** icon appears in the system tray — script is running.
 3. Focus the window you want to test (or your logger) and let the script type automatically.
 
 #### Stop the Script
-* Right-click the green H icon in the system tray → **Exit**.
+
+* Right-click the green H icon → **Exit**.
 
 #### Optional: Compile to EXE
+
 * Right-click the `.ahk` file → **Compile Script**.
-* This produces a standalone `.exe` you can run on any Windows PC without installing AHK.
+* Produces a standalone `.exe` you can run without installing AHK.
 
 ---
 
 ### Our Log Testing Script
-Our script (`tests/test_keys.ahk`, or `tests/test_keys.exe` for the compiled version) compares the program’s output log (`ks.log`) with an expected string in `expected.txt`.
 
-### How it works
+Our script (`tests/test_keys.ahk` / `tests/test_keys.exe`) compares the program’s output log (`ks.log`) with an expected string in `expected.txt`.
 
-1. Run the program in **test mode** → creates `ks.log` without window title names.
-2. The script reads both files, removes newlines, and compares them **character by character**.
-3. If a mismatch is found, it stops there and shows the **position** and the differing characters.
+#### How it works
+
+1. Run the program in **test mode** → creates `ks.log` without window titles.
+2. The script reads both files, removes newlines, and compares character by character.
+3. Stops at the first mismatch and shows **position** and differing characters.
+4. If all matches, shows *“Log matches expected string!”*.
 
 <p align="center">
 <img src="screenshots/ahk.png" alt="ahk test" width="500" />
 </p>
 
-4. If all matches, it shows *“Log matches expected string!”*.
+**Notes:**
 
-### Notes
-- In AutoHotkey, the `#` character is a special modifier symbol meaning `Win (Windows key)`, not a literal `#`. Don't use it in your tests.
-- On VSCode, `Ctrl+P > :1:[POSITION]` lets you get to the given position on a string.
+* `#` in AutoHotkey is a special modifier for `Win` key, not a literal `#`.
+* On VSCode, `Ctrl+P > :1:[POSITION]` jumps to position in a string.
 
-### Files
+**Files:**
 
 * `ks.log` – actual logged keys
 * `expected.txt` – expected keys
 * `test_keys.ahk` – test script
-* `test_keys.exe` – test binary
+* `test_keys.exe` – compiled test binary
 
-### Run
+**Run:**
 
 ```powershell
 # Run the keylogger first in test mode
 .\winkey.exe -t
 
-# Then tun the test script by double-clicking:
+# Then run the test script:
 test_keys.ahk
 # Or (no need to install AHK):
 test_keys.exe
 ```
 
-### ⚠️ Dead Key Limitations in Test Mode
+---
 
-* **Important:** keys can be dependent on the **user’s keyboard layout**.
-* Because of this, test results for some keys may **not be consistent** across different keyboards or locales.
-* When using the script, check your own keyboard layout and adjust expected logs accordingly.
+## 12. Setting Up a Safe Development Environment
+
+Use [windows-cpp-environment](https://github.com/daisvke/windows-cpp-environment) for:
+
+* Visual Studio Build Tools with `cl` and `nmake`
+* PowerShell aliases
+* Windows Sandbox configuration (`.wsb`) for safe testing
+
+**Important:** Run experimental programs inside the sandbox only.
 
 ---
 
-## Setting Up a Safe Development Environment
+## 13. Disclaimer
 
-For developing and testing C/C++ programs safely, especially code that may affect your system (e.g., educational keylogger experiments), we recommend using an isolated environment. You can use the preconfigured Windows development setup provided in [windows-cpp-environment](https://github.com/daisvke/windows-cpp-environment).
-
-This setup includes:
-
-- Visual Studio Build Tools with `cl` and `nmake`  
-- PowerShell aliases for development  
-- A Windows Sandbox configuration (`.wsb`) that maps a host folder, disables networking, and runs an initialization script
-
-**Important:** Always run experimental or sensitive programs inside the sandbox to prevent unintended effects on your main system. Follow the instructions in the repository to launch the sandbox and test safely.
+Educational purposes only. Unauthorized use may violate privacy laws. Use responsibly.
 
 ---
 
-## Disclaimer
+## 14. Documentation
 
-This software is for **educational purposes only**. Unauthorized use of keyloggers may violate privacy laws. Use responsibly.
+* [SetWindowsHookExA (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
+* [TranslateMessage (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-translatemessage)
+* [Using Messages and Message Queues (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/winmsg/using-messages-and-message-queues)
+* [GetAsyncKeyState (winuser.h)](https://learn.microsoft.com/en-au/windows/win32/api/winuser/nf-winuser-getasynckeystate)
+* [Keylogger Tutorial (Synacktiv)](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-13)
+* [Virtual Key Codes (Windows Learn)](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
+* [Keyboard input on Windows, Part II](https://metacpan.org/dist/UI-KeyboardLayout/view/lib/UI/KeyboardLayout.pm#Keyboard-input-on-Windows,-Part-II:-The-semantic-of-ToUnicode%28%29)
 
-## Documentation
-- [SetWindowsHookExA function (Microsoft Learn)](https://learn.microsoft.com/fr-fr/windows/win32/api/winuser/nf-winuser-setwindowshookexa)
-- [TranslateMessage function (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/api/winuser/nf-winuser-translatemessage)
-- [Using Messages and Message Queues (Microsoft Learn)](https://learn.microsoft.com/en-gb/windows/win32/winmsg/using-messages-and-message-queues)
-- [GetAsyncKeyState function (winuser.h)](https://learn.microsoft.com/en-au/windows/win32/api/winuser/nf-winuser-getasynckeystate)
-- [Keylogger Tutorial (Synacktiv)](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-13)
-- [Virtual Key Codes (Windows Learn)](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
-- [Keyboard input on Windows, Part II: The semantic of ToUnicode()](https://metacpan.org/dist/UI-KeyboardLayout/view/lib/UI/KeyboardLayout.pm#Keyboard-input-on-Windows,-Part-II:-The-semantic-of-ToUnicode())
+## TO DO
+- check dead keys behavior on < w10
+- leak checks: windbg?
