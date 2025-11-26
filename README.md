@@ -36,6 +36,7 @@ A Windows keylogger in C++ using WinAPI, with Unicode support and active window 
 ## 1. Screenshot
 
 ![Test Result](screenshots/test-result.png)
+(Excerpt from 'Si tu savais', by Robert Desnos)
 
 ---
 
@@ -203,6 +204,7 @@ l[Down][Down]a[Down][Up]sunrise
 
 [26.11.2025 23:44:04] - 'Sunrise (1927) - VLC media player'
 ```
+(Excerpt from 'Si tu savais', by Robert Desnos)
 
 ---
 
