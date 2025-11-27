@@ -130,6 +130,8 @@ Use UTF-8 compatible tools like **Notepad++** or **VS Code**.
 
 Windows IME processes Japanese input in stages and sends messages (`WM_IME_STARTCOMPOSITION`, `WM_IME_COMPOSITION`, `WM_IME_ENDCOMPOSITION`) to the focused window. The low-level keyboard hook only sees raw key codes, not composed text.
 
+Because of this, we will only get the composed characters like Japanese characters from the window titles, not from the keyhooks.
+
 ---
 
 ## 6. Dead Keys Problem
