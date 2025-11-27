@@ -34,6 +34,7 @@ A Windows keylogger in C++ using WinAPI, with Unicode support and active window 
 ---
 
 ## 1. Screenshot
+Example of a logged user typing personal messages, including a love poem to their ex:
 
 ![Test Result](screenshots/test-result.png)
 (Excerpt from 'Si tu savais', by Robert Desnos)
