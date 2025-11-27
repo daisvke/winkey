@@ -57,9 +57,11 @@ Example of a logged user typing personal messages, including a love poem to thei
 
 ## 3. Build & Execution Instructions
 
+Build with:
+
 > nmake
 
-and the usual:
+Use the usual rules to clean up or to rebuild:
 
 > nmake clean<br />
 > nmake fclean<br />
