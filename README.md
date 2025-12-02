@@ -7,9 +7,9 @@ A Windows keylogger in C++ using WinAPI, with Unicode support and active window 
 ## Table of Contents
 
 * [1. Screenshot](#1-screenshot)
-* [2. Unicode & UTF-8 Output](#2-unicode--utf-8-output)
-* [3. Why UTF-8](#3-why-utf-8)
-* [4. How We Convert UTF-16 → UTF-8](#4-how-we-convert-utf-16--utf-8)
+* [2. Features](#2-features)
+* [3. Build & Execution Instructions](#3-build--execution-instructions)
+* [4. Unicode & UTF-8 Handling](#4-unicode--utf-8-handling)
 * [5. Keystroke Logging Logic](#5-keystroke-logging-logic)
 
   * [5.1 Modifier Keys (Handled Manually)](#51-modifier-keys-handled-manually)
@@ -39,30 +39,55 @@ Example of a logged user typing personal messages, including a love poem to thei
 
 ---
 
-## 2. Unicode & UTF-8 Output
+## 2. Features
+
+* Logs all keystrokes globally.
+* Detects and logs active window title changes.
+* Handles uppercase and shifted input.
+* Correctly captures **Ctrl-modified characters** (e.g., `Ctrl+A`, `Ctrl+Alt+key`).
+* Supports **Alt code character input** (e.g., `#[|\]`) without corrupting keyboard state.
+* Properly processes **dead keys** (e.g., `^` + `e` → `ê`) while preserving the user's keyboard state.
+* Writes logs to a **UTF-8 encoded `.log` file**.
+* Limits repeated key output: when the maximum repetition count is reached, logging stops for that key.
+* Includes a **test mode** (`-t`) that simplifies debugging and comparing expected keystrokes with actual results.
+
+---
+
+## 3. Build & Execution Instructions
+
+> nmake
+
+Usual cleaning commands:
+
+> nmake clean<br />
+> nmake fclean<br />
+> nmake re
+
+Run the program:
+
+```powershell
+# '-t' is for test mode
+.\winkey.exe [-t]
+```
+
+---
+
+## 4. Unicode & UTF-8 Handling
 
 Windows APIs return text in **UTF-16** (`std::wstring`) by default. We store all keystrokes, window titles, and other text internally as `std::wstring` to correctly handle all Unicode characters, including accented European letters, Japanese, Chinese, Korean, and surrogate pairs.
 
 Logs are written to a **UTF-8 encoded file** using `std::ofstream` (byte-based). Each UTF-16 string is converted to UTF-8 before writing, ensuring the log is valid Unicode text and can be opened in modern editors.
 
----
-
-## 3. Why UTF-8
-
-We chose UTF-8 for the log file for several reasons:
+### Why UTF-8
 
 * **Cross-editor compatibility:** Modern editors like VS Code, Notepad++, and current Windows Notepad fully support UTF-8.
 * **No null bytes:** Unlike UTF-16, UTF-8 avoids embedded null bytes, simplifying text processing.
-* **Portability across Windows versions:** Works consistently from Windows 7 onward.
-* **Full Unicode coverage:** Any character, including those produced by IMEs or composed with dead keys, is preserved.
+* **Portability:** Works consistently from Windows 7 onward.
+* **Full Unicode coverage:** All characters, including those produced by IMEs or composed with dead keys, are preserved.
 
-This ensures accurate and readable logs across environments.
+### How We Convert UTF-16 → UTF-8
 
----
-
-## 4. How We Convert UTF-16 → UTF-8
-
-Instead of deprecated C++17 features like `std::codecvt_utf8`, we rely on **Windows API functions** for conversion:
+Instead of deprecated C++17 features like `std::codecvt_utf8`, we rely on **Windows API functions**:
 
 ```cpp
 int size = WideCharToMultiByte(
@@ -77,19 +102,34 @@ WideCharToMultiByte(
 logFile << utf8Str;
 ```
 
-This approach is:
+* **Reliable:** Handles surrogate pairs and all valid Unicode sequences.
+* **Cross-version compatible:** Works on Windows 7 through Windows 11.
+* **IME-safe:** Composed characters are preserved after conversion.
 
-* **Reliable:** Correctly handles surrogate pairs and all valid Unicode sequences.
-* **Cross-version compatible:** Works on Windows 7 through Windows 11 without deprecated libraries.
-* **IME-safe:** Composed characters (e.g., Japanese input) are preserved after conversion.
-
-By separating the internal representation (`std::wstring`) from the storage format (`std::ofstream` with UTF-8), we avoid mojibake, deprecated API warnings, and platform inconsistencies.
+By separating internal representation (`std::wstring`) from storage format (`std::ofstream` with UTF-8), we avoid mojibake and platform inconsistencies.
 
 *Reference:* [UTF-8 Everywhere – Windows](https://utf8everywhere.org/#windows)
 
 ---
 
 ## 5. Keystroke Logging Logic
+
+### Windows Keystroke Flow
+
+![Windows Keystroke Scheme](screenshots/keystroke-scheme.png)
+[Source](https://www.synacktiv.com/publications/writing-a-decent-win32-keylogger-23)
+
+Windows messages and key codes are processed as follows:
+
+```cpp
+ToUnicodeEx(...)  // Converts virtual key code + scan code to readable character
+```
+
+This allows the logger to:
+
+* Convert raw virtual key codes (`VK_*`) into proper characters.
+* Handle dead keys, Shift/Caps Lock, and Ctrl-modified characters.
+* Detect and log window titles on focus change.
 
 ### 5.1 Modifier Keys (Handled Manually)
 
@@ -102,7 +142,7 @@ GetAsyncKeyState(VK_SHIFT) & 0x8000
 GetKeyState(VK_CAPITAL) & 0x0001
 ```
 
-This ensures uppercase letters are detected only when Shift is held or Caps Lock is active.
+Ensures uppercase letters are detected only when Shift is held or Caps Lock is active.
 
 ---
 
@@ -226,8 +266,6 @@ We simulate key presses using **AutoHotkey (AHK)** scripts.
 
 * Right-click `.ahk` → Compile Script → produces standalone `.exe`
 
----
-
 ### Log Testing Script
 
 * Script (`tests/test_keys.ahk` / `.exe`) compares actual log (`ks.log`) to expected output (`expected.txt`).
@@ -276,4 +314,4 @@ Educational purposes only. Unauthorized use may violate privacy laws. Use respon
 ## TO DO
 
 * Check dead keys behavior on < Windows 10
-* Memory leak checks (Windbg, sanitizer)
+* Memory leak checks (Windbg)

@@ -16,35 +16,23 @@ static std::string wstring_to_utf8(const std::wstring& w)
 {
     if (w.empty()) return std::string();
     int size_needed = ::WideCharToMultiByte(
-        CP_UTF8,                // convert to UTF-8
-        0,
-        w.data(),
-        static_cast<int>(w.size()),
-        nullptr,
-        0,
-        nullptr,
-        nullptr
-    );
+        CP_UTF8, 0, w.data(), static_cast<int>(w.size()), nullptr, 0, nullptr, nullptr);
     if (size_needed <= 0) return std::string();
     std::string out;
     out.resize(size_needed);
     ::WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        w.data(),
-        static_cast<int>(w.size()),
-        &out[0],
-        size_needed,
-        nullptr,
-        nullptr
+        CP_UTF8, 0, w.data(), static_cast<int>(w.size()),
+        &out[0], size_needed, nullptr, nullptr
     );
     return out;
 }
 
 Winkey::Winkey() {
-    // Get the current folder
-    std::filesystem::path repoDir = std::filesystem::current_path();
-    _logFileName = repoDir / TW_LOGFILE;
+    // Get the full path for the log file
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileNameW(NULL, exePath, MAX_PATH);   // Get full path of exe
+    std::filesystem::path exeDir = std::filesystem::path(exePath).parent_path();
+    _logFileName = exeDir / TW_LOGFILE;
 }
 
 // Set hooks to intercept events
