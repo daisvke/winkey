@@ -268,14 +268,32 @@ We simulate key presses using **AutoHotkey (AHK)** scripts.
 
 ### Log Testing Script
 
-* Script (`tests/test_keys.ahk` / `.exe`) compares actual log (`ks.log`) to expected output (`expected.txt`).
-* Stops at first mismatch and shows position and differing characters.
+<p align="center">
+<img src="screenshots/ahk.png" alt="ahk test" width="500" />
+</p>
+
+**Notes:**
+
+* `#` in AutoHotkey is a special modifier for Win key, not a literal `#`.
+* On VSCode, `Ctrl+P > :1:[POSITION]` jumps to position in a string.
+
+**Files:**
+
+* `ks.log` – actual logged keys
+* `expected.txt` – expected keys
+* `test_keys.ahk` – test script
+* `test_keys.exe` – compiled test binary
 
 **Run:**
 
 ```powershell
+# Run the keylogger first in test mode
 .\winkey.exe -t
-test_keys.ahk   # or test_keys.exe
+
+# Then run the test script:
+test_keys.ahk
+# Or (no need to install AHK):
+test_keys.exe
 ```
 
 ---
