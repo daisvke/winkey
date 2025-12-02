@@ -17,10 +17,8 @@
 # include <iomanip>				// For std::setw and std::setfill
 # include <thread>				// For sleep_for
 # include <sstream>				// For error handling
-
-// For wide characters
-# include <locale>
-# include <codecvt>
+# include <filesystem>			// To get the current path
+# include <locale>				// For wide characters
 
 
 /************************** Macros **************************/
@@ -76,14 +74,15 @@ class	Winkey
 			LONG /*idObject*/, LONG /*idChild*/, DWORD /*dwEventThread*/, DWORD /*dwmsEventTime*/
 		);
 
-		static bool				_testMode;
-		static const char		*_logFileName;
-		static std::wofstream	_logFile;
-		static std::wstring		_windowTitle;
-		static HWND				_currentWindow;
-		static std::wstring		_keyStroke;
-		HWINEVENTHOOK			_winEventHook;
-		HHOOK   				_keyboardHook;
+		static bool						_testMode;
+		static std::filesystem::path	_logFileName;
+		static std::ofstream			_logFile;
+		static std::wstring				_windowTitle;
+		static HWND						_currentWindow;
+		static std::wstring				_keyStroke;
+
+		HWINEVENTHOOK					_winEventHook;
+		HHOOK   						_keyboardHook;
 };
 
 

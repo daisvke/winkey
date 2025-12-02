@@ -10,7 +10,7 @@ LOGGER_LOG          = ks.log
 # ****************************
 
 CC                  = cl
-CFLAGS              = /nologo /Wall /WX /W3 /EHsc /wd5045
+CFLAGS              = /nologo /Wall /WX /W3 /EHsc /std:c++17 /wd5045
 
 # ****************************
 #       FILE STRUCTURE

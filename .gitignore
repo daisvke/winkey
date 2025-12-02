@@ -3,6 +3,7 @@
 .vscode/
 *.log
 *.old
+*.pdb
 
 # Prerequisites
 *.d

